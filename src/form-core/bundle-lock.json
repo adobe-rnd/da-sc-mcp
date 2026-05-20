@@ -1,0 +1,13 @@
+{
+  "formCoreBase": "https://form-v2--da-nx--adobe.aem.page",
+  "modules": {
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/app/json2html.js": "bfee64ea5468e2abb0b3f15a627cce0f80ee6cffce6fa7b66b9fadbf8ed0ed04",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/clone.js": "825da43f61cefcc8e26d40076a6f44408a4a746bcc788f49a5aea8e7d7c5917a",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/index.js": "a60f7248b1f5ff1301a5bc3e9a7fe985d0f02b73d059ed1a6200ba033c985742",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/model.js": "706d078e21250e159ef0f0dd1e7c5172e6216a79cd58e19b5322489c8bf77c0f",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/mutate.js": "b139f77578c7ae6b154ea1c9d9e75b4c9ebc25c7501f424b5a7b396d079d782b",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/pointer.js": "4ef191e22fee813a8af454bfee2b2e31b2c08f1b2bafa7d9c7d6d4134be4fa54",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/schema.js": "88d66d397173642283a8f36ed8936d8f1cb9a45ac1e7668e3025061fc5fcc8be",
+    "https://form-v2--da-nx--adobe.aem.page/nx/blocks/form/core/validation.js": "e633cb9c463ee3d365e04a96457b390cc2af9a3a489365e545b057352f459add"
+  }
+}

@@ -9,6 +9,8 @@
     "bundle:update-lock": "FORM_CORE_LOCK_MODE=update node scripts/bundle-form-core.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:dev": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "type-check": "tsc --noEmit"

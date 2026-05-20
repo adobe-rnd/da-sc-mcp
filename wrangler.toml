@@ -7,5 +7,12 @@ compatibility_flags = ["nodejs_compat"]
 command = "npm run bundle"
 
 [vars]
-VERSION = "0.1.0"
+VERSION = "0.1.0-dev"
 ENVIRONMENT = "dev"
+
+[env.production]
+name = "da-sc-mcp"
+
+[env.production.vars]
+VERSION = "0.1.0"
+ENVIRONMENT = "production"

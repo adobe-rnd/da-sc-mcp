@@ -89,15 +89,16 @@ cd da-sc-mcp
 npm install
 ```
 
-## Quick Start for non-developers (Claude only)
+## Non-developer setup (Claude only)
 
-Use this if you only want to use Claude with this MCP + skills (no local development required).
+Use this if you only want to use Claude with this MCP + skills and do not need local development.
+If this is your use case, you can follow this section and skip to usage examples.
 
 1) Configure MCP in Claude (no manual JSON editing):
 
 ```bash
 # Use deployed worker URL
-claude mcp add --transport http da-sc https://<your-worker-subdomain>.workers.dev/mcp
+claude mcp add --transport http da-sc https://da-sc-mcp.adobeaem.workers.dev/mcp
 ```
 
 If you are using a locally running worker on your machine:
@@ -126,6 +127,8 @@ npx skills ls --agent claude-code
 ```
 
 You should see `da-sc` connected and tools available.
+
+Developers who want to run the worker locally should continue with the Development section and the developer-focused Claude setup below.
 
 ## Development
 
@@ -158,17 +161,81 @@ npm run test:watch
 npm run type-check
 ```
 
-## Deployment
+## Test on Cloudflare
+
+Use this flow to verify behavior on Cloudflare before (or after) production deploy.
+
+### 1) One-time Cloudflare auth
+
+```bash
+npx wrangler login
+```
+
+### 2) Test on Cloudflare edge without full deploy
+
+Run dev in remote mode:
+
+```bash
+npm run dev -- --remote
+```
+
+In another terminal:
+
+```bash
+curl https://<remote-dev-url>/health
+```
+
+Expected: JSON response with `"status": "healthy"`.
+
+### 3) Deploy and test the worker URL
 
 ```bash
 npm run deploy
 ```
 
-After deploy, MCP endpoint format:
+Then test:
 
-- `https://<your-worker-subdomain>.workers.dev/mcp`
+```bash
+curl https://da-sc-mcp.adobeaem.workers.dev/health
+```
 
-## Claude Setup (MCP + skills)
+For explicit production deployment profile, use:
+
+```bash
+npm run deploy:prod
+```
+
+### 4) Verify MCP endpoint
+
+- MCP URL format: `https://da-sc-mcp.adobeaem.workers.dev/mcp`
+- In Claude, configure `da-sc` to that URL and run `/mcp` to confirm connected tools.
+
+### 5) Tail logs while testing
+
+```bash
+npx wrangler tail
+```
+
+## Deployment
+
+```bash
+# Default deployment profile (dev)
+npm run deploy
+
+# Production worker
+npm run deploy:prod
+```
+
+`npm run deploy:dev` is kept as an alias for `npm run deploy`.
+
+After deployment, MCP endpoint format:
+
+- `https://da-sc-mcp.adobeaem.workers.dev/`
+- `https://da-sc-mcp.adobeaem.workers.dev/mcp`
+
+## Developer-focused Claude setup (local worker + local skills)
+
+This section is for contributors running `da-sc-mcp` from a local checkout.
 
 Claude needs two things:
 
@@ -187,7 +254,7 @@ claude mcp add --transport http da-sc http://localhost:8787/mcp
 claude mcp add --transport http da-sc --scope project http://localhost:8787/mcp
 
 # User scope: available across your projects
-claude mcp add --transport http da-sc --scope user https://<your-worker-subdomain>.workers.dev/mcp
+claude mcp add --transport http da-sc --scope user https://da-sc-mcp.adobeaem.workers.dev/mcp
 ```
 
 Manage/check MCP servers:

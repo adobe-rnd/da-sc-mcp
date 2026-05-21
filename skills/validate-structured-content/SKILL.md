@@ -3,7 +3,7 @@ name: validate-structured-content
 description: Validate a DA Structured Content schema, a data document against a schema, or both — reporting issues and pointers, with no creation, serialization, or DA persistence. Use whenever a user asks to check, verify, validate, lint, or "see if this is OK" — even casual phrasing — for an SC schema or data. Skip when the user wants to create, import, save, or convert anything (those are different skills).
 license: Apache-2.0
 metadata:
-  version: "1.2.0"
+  version: "0.1.0"
 ---
 
 # Validate Structured Content
@@ -43,20 +43,26 @@ If both are present, validate the schema first, then validate the data against i
 ## Workflow
 
 ### Step 1 — Identify inputs
+
 - Determine which of schema / data / both is being validated.
 - If schema is given as a DA path, load it via `da_get_source` and extract the schema JSON from the HTML payload (read-only).
 - If data is wrapped, unwrap to the `data` portion for validation.
 
 ### Step 2 — Validate schema (if provided)
+
 Call `sc_compile_schema` with the schema JSON.
+
 - `editable: true` and `issues: []` → schema OK.
 - Otherwise collect issues with `reason` and pointer.
 
 ### Step 3 — Validate data (if provided and schema present)
+
 Call `sc_validate_document` with `schema` and `data` as JSON strings. Collect errors with pointers and messages.
 
 ### Step 4 — Report
+
 Return a clear validation report:
+
 - Schema validation status (`ok` or list of issues with pointer + reason).
 - Data validation status (`ok` or list of issues with pointer + message).
 - A short verdict line: e.g., "Schema OK. Data has 2 errors at `/items/0/price` and `/items/1/sku`."
@@ -68,16 +74,21 @@ Suggest what the user could change; don't mutate the source. The reason: validat
 Every payload starts with a `status` field. Two shapes (this skill does not pause for user decisions — reporting issues IS the deliverable, not a blocker):
 
 **Success** (validation ran cleanly; the validation result itself may show issues, that's normal):
+
 ```json
 {
   "status": "ok",
   "schemaResult": { "ok": true, "issues": [] },
-  "dataResult": { "ok": false, "errors": [ { "pointer": "...", "message": "..." } ] },
+  "dataResult": {
+    "ok": false,
+    "errors": [{ "pointer": "...", "message": "..." }]
+  },
   "notes": "<one-line verdict>"
 }
 ```
 
 **Failure** (missing inputs, tool unavailable, couldn't load schema):
+
 ```json
 {
   "status": "failed",
@@ -97,8 +108,8 @@ Note: a validation report that says "the data has 5 errors" is still `status: "o
 
 ## Troubleshooting
 
-| Issue | Likely Cause | Fix |
-|---|---|---|
-| Schema fetched from DA but no schema JSON inside | Wrong `schemaName` or path | Verify `/.da/forms/schemas/{schemaName}.html` exists |
-| Many data errors | Data does not conform to schema | Report errors; user decides whether to fix data or revise schema (the latter via **generate-schema**) |
-| User asked to "fix and re-validate" | Out of scope for this skill | Route to **generate-schema** (schema changes) or revise source data |
+| Issue                                            | Likely Cause                    | Fix                                                                                                   |
+| ------------------------------------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Schema fetched from DA but no schema JSON inside | Wrong `schemaName` or path      | Verify `/.da/forms/schemas/{schemaName}.html` exists                                                  |
+| Many data errors                                 | Data does not conform to schema | Report errors; user decides whether to fix data or revise schema (the latter via **generate-schema**) |
+| User asked to "fix and re-validate"              | Out of scope for this skill     | Route to **generate-schema** (schema changes) or revise source data                                   |

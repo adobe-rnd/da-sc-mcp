@@ -3,7 +3,7 @@ name: author-structured-content
 description: Orchestrate end-to-end DA Structured Content creation from any source — URL, JSON, file, image/PDF, topic, or plain-language brief. Use whenever a user describes source material (a website, a JSON blob, a topic, a document) AND wants the result ending up in DA (mentions org/site, "import", "create as structured content", "save to DA") — even if they don't say "schema" or "structured content" explicitly. Skip when only HTML output is needed (use serialize-structured-content), only a schema (use generate-schema), only an import into an existing schema (use import-structured-content), or only validation (use validate-structured-content).
 license: Apache-2.0
 metadata:
-  version: "3.2.0"
+  version: "0.1.0"
 ---
 
 # Author Structured Content (Orchestrator)
@@ -50,11 +50,11 @@ Two channels, separate concerns:
 
 Every sub-skill's handoff payload starts with a `status` field. Branch on it:
 
-| `status` | Meaning | Orchestrator action |
-|---|---|---|
-| `ok` | Sub-skill completed; payload fields populated. | Continue to the next step. |
+| `status`              | Meaning                                                                      | Orchestrator action                                                                                                                            |
+| --------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ok`                  | Sub-skill completed; payload fields populated.                               | Continue to the next step.                                                                                                                     |
 | `needs_user_decision` | Sub-skill paused awaiting a user choice; payload contains `decisionRequest`. | Surface options to the user; once they decide, re-invoke the same sub-skill with the decision stated in your message (see "Resumption" below). |
-| `failed` | Sub-skill could not proceed; payload contains `error`. | Stop the orchestration and surface the failure with context. Do not silently try to recover. |
+| `failed`              | Sub-skill could not proceed; payload contains `error`.                       | Stop the orchestration and surface the failure with context. Do not silently try to recover.                                                   |
 
 ## Resumption (after `needs_user_decision`)
 
@@ -74,6 +74,7 @@ The sub-skill scans its prior context, sees the recorded decisions, applies them
 ## Orchestration Workflow
 
 ### Step 0 — Confirm target document path with the user
+
 Before any delegation, you must have a `docPath` the user has confirmed. The schema location is fixed and needs no confirmation, but the document location is the user's choice.
 
 - If the user explicitly stated a path, use it.
@@ -83,6 +84,7 @@ Before any delegation, you must have a `docPath` the user has confirmed. The sch
 Wait for an explicit confirmation. Do not proceed to Step 1 with a guessed path.
 
 ### Step 1 — Detect source type and prepare a structured payload
+
 Identify the source type and produce a structured payload to pass downstream:
 
 - **URL:** fetch (using your general WebFetch / browsing ability — not an `sc_*`/`da_*` tool) and identify candidate structures (lists, cards, repeating sections). Build a structured representation.
@@ -93,6 +95,7 @@ Identify the source type and produce a structured payload to pass downstream:
 Pass the structured payload through to **generate-schema** without reshaping it. Key/shape policy is owned downstream — restating it here would put the rule in two places and risk drift.
 
 ### Step 2 — Delegate schema work to generate-schema
+
 State the payload, `schemaName`, `org`, `site` in your message, then invoke:
 
 ```
@@ -106,17 +109,20 @@ Branch on the returned `status`:
 - **`failed`** — stop. Surface `error.code` and `error.message`.
 
 Expected `ok` payload:
+
 ```json
 {
   "status": "ok",
-  "schemaJson": { },
+  "schemaJson": {},
   "schemaPath": "/.da/forms/schemas/{schemaName}.html",
-  "keyMappings": [ ],
+  "schemaEditorUrl": "https://da.live/apps/schema#/<org>/<site>",
+  "keyMappings": [],
   "notes": "..."
 }
 ```
 
 ### Step 3 — Delegate document work to import-structured-content
+
 State the (renamed if needed) source payload, `schemaName`, `org`, `site`, `docPath`, and a title hint (prefer source `title`, otherwise derive) in your message, then invoke:
 
 ```
@@ -125,45 +131,49 @@ Skill(skill="import-structured-content", args="mode=delegated, caller=author-str
 
 Branch on `status`:
 
-- **`ok`** — capture the editor URLs and continue to Step 4.
+- **`ok`** — capture the editor URL and continue to Step 4.
 - **`needs_user_decision`** — for example, validation surfaced errors and the user must choose to fix or override. Follow the Resumption protocol.
 - **`failed`** — stop and surface the failure.
 
 Expected `ok` payload:
+
 ```json
 {
   "status": "ok",
   "docPath": "...",
   "validationResult": { "ok": true, "errors": [] },
-  "editorUrls": { "editor": "...", "preview": "...", "live": "..." },
+  "editorUrl": "https://da.live/form#/<org>/<site>/<path>",
   "notes": "..."
 }
 ```
 
 ### Step 4 — Compose the final user-facing response
+
 You own this. Sub-skills produced no user-facing output (they ran in delegated mode), so the user sees only what you write here:
 
 - Source type summary (e.g., "URL → 3 structures detected", "JSON → product catalog shape", "Demo for topic: blog posts")
 - `schemaName` and saved schema path (from Step 2)
+- **Schema editor URL** (from Step 2's `schemaEditorUrl`). Note: the URL is for the org/site schema list; mention the schema name in surrounding prose so the user knows what to look for (e.g., "Schema editor (find `{schemaName}` in the list): \<url\>").
 - Saved document path (from Step 3)
-- Editor URLs (from Step 3 — use these directly, do not re-fetch)
+- **Document editor URL** (from Step 3's `editorUrl` — use directly, do not re-fetch or re-compute)
 - Any notable decisions: key mappings, validation issues resolved, derived titles
 
 ## Boundaries
 
 - Schema design / validation / save / key policy → **generate-schema**.
 - Document payload shape → **serialize-structured-content** (driven through **import-structured-content**).
-- Document validation, DA write, editor URL retrieval → **import-structured-content**.
+- Document validation and DA write → **import-structured-content**.
+- Editor URL construction (document and schema) → **compute-editor-urls** (called by the relevant sub-skill — author never delegates directly).
 
 This skill calls no `sc_*` or `da_*` tools directly. If a sub-skill is unavailable or returns `failed`, stop and surface the failure with the `error.code` and `error.message` from its handoff — silently routing around a missing sub-skill defeats the ownership model and produces inconsistent results.
 
 ## Troubleshooting
 
-| Issue | Likely Cause | Fix |
-|---|---|---|
-| Sub-skill returned a user-facing wrap-up instead of handoff payload | Missing `mode=delegated` in args | Re-invoke with correct args |
-| Sub-skill returned `status: "needs_user_decision"` | Reserved key, validation conflict, etc. | Follow the Resumption protocol; do not skip the user step |
-| Sub-skill returned `status: "failed"` with `error.code = "missing_input"` | Forgot to state required data in the message before invoking | Restate inputs and re-invoke |
-| Sub-skill returned `status: "failed"` with another `error.code` | Genuine downstream failure | Surface to user with full error context; do not retry blindly |
-| Handoff payload missing the `status` field | Sub-skill is out of date | Treat as `failed`; ask user to update the sub-skill |
-| Editor URLs missing in final response | Step 3 handoff payload was not captured | Re-run **import-structured-content** delegated; never construct URLs manually |
+| Issue                                                                     | Likely Cause                                                 | Fix                                                                           |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Sub-skill returned a user-facing wrap-up instead of handoff payload       | Missing `mode=delegated` in args                             | Re-invoke with correct args                                                   |
+| Sub-skill returned `status: "needs_user_decision"`                        | Reserved key, validation conflict, etc.                      | Follow the Resumption protocol; do not skip the user step                     |
+| Sub-skill returned `status: "failed"` with `error.code = "missing_input"` | Forgot to state required data in the message before invoking | Restate inputs and re-invoke                                                  |
+| Sub-skill returned `status: "failed"` with another `error.code`           | Genuine downstream failure                                   | Surface to user with full error context; do not retry blindly                 |
+| Handoff payload missing the `status` field                                | Sub-skill is out of date                                     | Treat as `failed`; ask user to update the sub-skill                           |
+| Editor URL missing in final response                                      | Step 2 or Step 3 handoff payload was not captured            | Re-run the relevant sub-skill; never construct URLs manually — that's **compute-editor-urls**'s job |

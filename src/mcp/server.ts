@@ -11,7 +11,6 @@ import {
   handleValidateDocument,
   handleSerializeSchema,
   handleSerializeDocument,
-  handleGetEditorUrls,
 } from './handlers';
 
 export function createServer(formCore: FormCore, version: string): McpServer {
@@ -74,25 +73,6 @@ export function createServer(formCore: FormCore, version: string): McpServer {
       }),
     },
     (args) => handleSerializeDocument(formCore, args) as Promise<CallToolResult>,
-  );
-
-  server.registerTool(
-    'sc_get_editor_urls',
-    {
-      description:
-        'Return the correct DA editor URLs for a schema and (optionally) a document. Always use this tool to get links — never construct DA URLs manually.',
-      inputSchema: z.object({
-        org: z.string().describe('DA org'),
-        site: z.string().describe('DA site'),
-        docPath: z
-          .string()
-          .optional()
-          .describe(
-            'Document path without .html extension, e.g. /forms/my-product. Omit to get the schema editor URL only.',
-          ),
-      }),
-    },
-    (args) => handleGetEditorUrls(args) as Promise<CallToolResult>,
   );
 
   return server;

@@ -3,7 +3,7 @@ name: serialize-structured-content
 description: Convert a structured payload into DA form HTML via sc_serialize_document. Use whenever a user provides structured data (JSON object, file path, payload) and asks for SC HTML, "form HTML", a "serialized document", or just "convert this" — even if they don't say the word "serialize." Skip when the user wants the result saved to DA (use import-structured-content) or needs a schema generated first (use author-structured-content).
 license: Apache-2.0
 metadata:
-  version: "3.2.0"
+  version: "0.1.0"
 ---
 
 # Serialize Structured Content
@@ -46,11 +46,12 @@ Every serialized SC document has this shape:
     "schemaName": "<schema-name>",
     "title": "<non-empty descriptive title>"
   },
-  "data": { }
+  "data": {}
 }
 ```
 
 Rules:
+
 - `metadata.schemaName` is required.
 - `metadata.title` is required and non-empty. DA forms use it as the document's human-facing name; an empty title produces a document the user cannot identify in the DA UI.
 - `data` holds the actual content. No extra wrapper keys — `sc_serialize_document` ignores them and they confuse downstream tooling.
@@ -60,37 +61,51 @@ Rules:
 ### Examples
 
 **Input already shaped:**
+
 ```json
-{ "metadata": { "schemaName": "blog-post", "title": "Hello" }, "data": { "body": "..." } }
+{
+  "metadata": { "schemaName": "blog-post", "title": "Hello" },
+  "data": { "body": "..." }
+}
 ```
+
 → Pass through unchanged to `sc_serialize_document`.
 
 **Plain data, title in data:**
+
 ```json
 { "title": "Q4 Report", "body": "...", "author": "..." }
 ```
+
 → Wrap as `{ "metadata": { "schemaName": "<caller-provided>", "title": "Q4 Report" }, "data": { "title": "Q4 Report", "body": "...", "author": "..." } }`.
 
 **Plain data, no title:**
+
 ```json
 { "sku": "ABC-123", "price": 9.99 }
 ```
+
 → Derive a title (e.g. "Product ABC-123") and wrap.
 
 ## Workflow
 
 ### Step 1 — Parse input
+
 Accept either a file path or a raw structured payload. Parse into an object.
 
 ### Step 2 — Normalize into document payload
+
 Apply the shape above. The reason this normalization lives here and not in the caller: the payload shape is a serialization contract, not a business concern. Centralizing it means a schema change touches one file.
 
 ### Step 3 — Serialize
+
 Call `sc_serialize_document` with the JSON-stringified normalized payload. On error:
+
 - **Standalone:** return the error and stop.
 - **Delegated:** return a `failed` handoff with `error.code = "serialization_failed"`.
 
 ### Step 4 — Return
+
 - **Standalone:** the serialized HTML, plus a short note describing how the input was normalized (already-shaped vs wrapped).
 - **Delegated:** the handoff payload below.
 
@@ -99,6 +114,7 @@ Call `sc_serialize_document` with the JSON-stringified normalized payload. On er
 Every payload starts with a `status` field. Two shapes (this skill does not need to ask the user anything, so `needs_user_decision` is not used):
 
 **Success:**
+
 ```json
 {
   "status": "ok",
@@ -109,6 +125,7 @@ Every payload starts with a `status` field. Two shapes (this skill does not need
 ```
 
 **Failure** (missing inputs, serialization failed):
+
 ```json
 {
   "status": "failed",
@@ -127,9 +144,9 @@ Every payload starts with a `status` field. Two shapes (this skill does not need
 
 ## Troubleshooting
 
-| Issue | Likely Cause | Fix |
-|---|---|---|
-| `sc_serialize_document` errors on metadata | Missing `metadata.schemaName` or `metadata.title` | Add required metadata and retry |
-| Input parsed but serialization fails | Invalid wrapper shape | Ensure top-level keys are `metadata` and `data` |
-| Title blank or invalid | Title missing or empty string | Derive a non-empty title from input content |
-| User expected the HTML to be saved | This skill does not persist | Route the user to **import-structured-content** |
+| Issue                                      | Likely Cause                                      | Fix                                             |
+| ------------------------------------------ | ------------------------------------------------- | ----------------------------------------------- |
+| `sc_serialize_document` errors on metadata | Missing `metadata.schemaName` or `metadata.title` | Add required metadata and retry                 |
+| Input parsed but serialization fails       | Invalid wrapper shape                             | Ensure top-level keys are `metadata` and `data` |
+| Title blank or invalid                     | Title missing or empty string                     | Derive a non-empty title from input content     |
+| User expected the HTML to be saved         | This skill does not persist                       | Route the user to **import-structured-content** |

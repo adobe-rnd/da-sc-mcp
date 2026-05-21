@@ -84,19 +84,3 @@ export async function handleSerializeDocument(
     };
   }
 }
-
-export async function handleGetEditorUrls(args: {
-  org: string;
-  site: string;
-  docPath?: string;
-}) {
-  const schemaUrl = `https://da.live/apps/schema#/${args.org}/${args.site}`;
-  const result: { schemaEditorUrl: string; documentEditorUrl?: string } = {
-    schemaEditorUrl: schemaUrl,
-  };
-  if (args.docPath) {
-    const path = args.docPath.replace(/\.html$/, '');
-    result.documentEditorUrl = `https://da.live/form#/${args.org}/${args.site}${path.startsWith('/') ? path : `/${path}`}`;
-  }
-  return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-}

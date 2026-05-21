@@ -6,7 +6,6 @@ import {
   handleValidateDocument,
   handleSerializeSchema,
   handleSerializeDocument,
-  handleGetEditorUrls,
 } from '../../src/mcp/handlers';
 
 const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
@@ -120,26 +119,4 @@ describe('sc handlers', () => {
     });
   });
 
-  describe('handleGetEditorUrls', () => {
-    it('returns schema editor url when docPath is omitted', async () => {
-      const result = await handleGetEditorUrls({ org: 'adobe', site: 'my-site' });
-
-      expect(JSON.parse(result.content[0].text)).toEqual({
-        schemaEditorUrl: 'https://da.live/apps/schema#/adobe/my-site',
-      });
-    });
-
-    it('returns both schema and document urls and normalizes docPath', async () => {
-      const result = await handleGetEditorUrls({
-        org: 'adobe',
-        site: 'my-site',
-        docPath: 'forms/my-doc.html',
-      });
-
-      expect(JSON.parse(result.content[0].text)).toEqual({
-        schemaEditorUrl: 'https://da.live/apps/schema#/adobe/my-site',
-        documentEditorUrl: 'https://da.live/form#/adobe/my-site/forms/my-doc',
-      });
-    });
-  });
 });

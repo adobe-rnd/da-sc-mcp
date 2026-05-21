@@ -2,6 +2,7 @@
 name: author-structured-content
 description: Orchestrate end-to-end DA Structured Content creation from any source — URL, JSON, file, image/PDF, topic, or plain-language brief. Use whenever a user describes source material (a website, a JSON blob, a topic, a document) AND wants the result ending up in DA (mentions org/site, "import", "create as structured content", "save to DA") — even if they don't say "schema" or "structured content" explicitly. Skip when only HTML output is needed (use serialize-structured-content), only a schema (use generate-schema), only an import into an existing schema (use import-structured-content), or only validation (use validate-structured-content).
 license: Apache-2.0
+compatibility: Pure orchestrator — delegates all work to generate-schema, import-structured-content, serialize-structured-content, and compute-editor-urls. Requires those skills installed plus DA MCP and DA-SC MCP for the sub-skills. Uses general WebFetch/Read for source ingestion.
 metadata:
   version: "0.1.0"
 ---

@@ -2,6 +2,7 @@
 name: import-structured-content
 description: Import structured source data into DA against an EXISTING schema — validates, serializes (via serialize-structured-content), saves to DA, and returns the editor URL. Use whenever a user has data ready and references an existing schema in org/site, even if they just say "import", "save this", "put this in DA against schema X", or "add a document to schema Y." Skip when the schema does not exist yet (use author-structured-content).
 license: Apache-2.0
+compatibility: Requires DA-SC MCP (sc_validate_document) and DA MCP (da_get_source, da_create_source). Delegates to the serialize-structured-content and compute-editor-urls skills.
 metadata:
   version: "0.1.0"
 ---

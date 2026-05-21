@@ -2,6 +2,7 @@
 name: serialize-structured-content
 description: Convert a structured payload into DA form HTML via sc_serialize_document. Use whenever a user provides structured data (JSON object, file path, payload) and asks for SC HTML, "form HTML", a "serialized document", or just "convert this" — even if they don't say the word "serialize." Skip when the user wants the result saved to DA (use import-structured-content) or needs a schema generated first (use author-structured-content).
 license: Apache-2.0
+compatibility: Requires DA-SC MCP (sc_serialize_document).
 metadata:
   version: "0.1.0"
 ---

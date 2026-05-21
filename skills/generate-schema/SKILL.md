@@ -2,6 +2,7 @@
 name: generate-schema
 description: Generate, validate, and persist a DA Structured Content schema. Use whenever a user wants a schema designed from a description, sample payload, file, or even a sketch of the fields they want — even if they don't say "schema" explicitly (phrases like "model this", "create a form for", "define the fields"). Skip when the user also wants data imported alongside (use author-structured-content) or already has the schema and wants only to import data (use import-structured-content).
 license: Apache-2.0
+compatibility: Requires DA-SC MCP (sc_compile_schema, sc_serialize_schema) and DA MCP (da_create_source). Delegates to the compute-editor-urls skill for the schema editor URL.
 metadata:
   version: "0.1.0"
 ---

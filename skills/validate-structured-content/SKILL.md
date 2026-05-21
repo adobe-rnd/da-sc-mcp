@@ -2,6 +2,7 @@
 name: validate-structured-content
 description: Validate a DA Structured Content schema, a data document against a schema, or both — reporting issues and pointers, with no creation, serialization, or DA persistence. Use whenever a user asks to check, verify, validate, lint, or "see if this is OK" — even casual phrasing — for an SC schema or data. Skip when the user wants to create, import, save, or convert anything (those are different skills).
 license: Apache-2.0
+compatibility: Requires DA-SC MCP (sc_compile_schema, sc_validate_document). DA MCP (da_get_source) optional — only needed when loading a schema from a DA path.
 metadata:
   version: "0.1.0"
 ---

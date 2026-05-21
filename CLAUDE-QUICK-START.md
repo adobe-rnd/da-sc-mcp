@@ -26,8 +26,8 @@ Please set up the DA Structured Content tooling for me:
 
 Ask Claude things like:
 
-- "Create a demo structured content for blog posts in org=acme site=blog"
-- "Take this JSON and create it as structured content in org=acme site=catalog"
+- "Create a demo structured content for blog posts in org=<YOUR_ORG> site=<YOUR_SITE>"
+- "Take this JSON and create it as structured content in org=<YOUR_ORG> site=<YOUR_SITE>"
 - "Convert this JSON to structured content HTML"
 - "Validate this schema"
 

@@ -59,21 +59,25 @@ skills/
 
 ## Available MCP Tools
 
-| Tool | Description |
-|------|-------------|
-| `sc_compile_schema` | Compile schema against DA form constraints and return `editable` + `issues` |
-| `sc_validate_document` | Validate document `data` against schema and return pointer-based errors |
-| `sc_serialize_schema` | Convert schema JSON into DA schema-editor HTML shell |
-| `sc_serialize_document` | Convert `{ metadata, data }` document JSON into DA EDS HTML |
+
+| Tool                    | Description                                                                 |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `sc_compile_schema`     | Compile schema against DA form constraints and return `editable` + `issues` |
+| `sc_validate_document`  | Validate document `data` against schema and return pointer-based errors     |
+| `sc_serialize_schema`   | Convert schema JSON into DA schema-editor HTML shell                        |
+| `sc_serialize_document` | Convert `{ metadata, data }` document JSON into DA EDS HTML                 |
+
 
 ## Included Skills
 
-| Skill | Purpose |
-|------|---------|
-| `author-structured-content` | End-to-end source -> schema -> document -> optional DA persistence |
-| `generate-schema` | Schema-only workflow |
-| `import-structured-content` | Existing-schema import + optional persistence |
-| `serialize-structured-content` | JSON -> HTML serialization-only workflow (no write by default) |
+
+| Skill                          | Purpose                                                            |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `author-structured-content`    | End-to-end source -> schema -> document -> optional DA persistence |
+| `generate-schema`              | Schema-only workflow                                               |
+| `import-structured-content`    | Existing-schema import + optional persistence                      |
+| `serialize-structured-content` | JSON -> HTML serialization-only workflow (no write by default)     |
+
 
 ## Prerequisites
 
@@ -89,46 +93,11 @@ cd da-sc-mcp
 npm install
 ```
 
-## Non-developer setup (Claude only)
+## Quick Start for non-developers (Claude only)
 
-Use this if you only want to use Claude with this MCP + skills and do not need local development.
-If this is your use case, you can follow this section and skip to usage examples.
+For the simplest MCP + skills setup, see:
 
-1) Configure MCP in Claude (no manual JSON editing):
-
-```bash
-# Use deployed worker URL
-claude mcp add --transport http da-sc https://da-sc-mcp.adobeaem.workers.dev/mcp
-```
-
-If you are using a locally running worker on your machine:
-
-```bash
-claude mcp add --transport http da-sc http://localhost:8787/mcp
-```
-
-2) Install all Structured Content skills:
-
-```bash
-npx skills add "adobe-rnd/da-sc-mcp" --all
-```
-
-3) Verify setup:
-
-```bash
-claude mcp get da-sc
-npx skills ls --agent claude-code
-```
-
-4) In Claude Code, run:
-
-```text
-/mcp
-```
-
-You should see `da-sc` connected and tools available.
-
-Developers who want to run the worker locally should continue with the Development section and the developer-focused Claude setup below.
+- [`NON-DEVELOPER-SETUP.md`](./NON-DEVELOPER-SETUP.md)
 
 ## Development
 
@@ -161,81 +130,17 @@ npm run test:watch
 npm run type-check
 ```
 
-## Test on Cloudflare
-
-Use this flow to verify behavior on Cloudflare before (or after) production deploy.
-
-### 1) One-time Cloudflare auth
-
-```bash
-npx wrangler login
-```
-
-### 2) Test on Cloudflare edge without full deploy
-
-Run dev in remote mode:
-
-```bash
-npm run dev -- --remote
-```
-
-In another terminal:
-
-```bash
-curl https://<remote-dev-url>/health
-```
-
-Expected: JSON response with `"status": "healthy"`.
-
-### 3) Deploy and test the worker URL
-
-```bash
-npm run deploy
-```
-
-Then test:
-
-```bash
-curl https://da-sc-mcp.adobeaem.workers.dev/health
-```
-
-For explicit production deployment profile, use:
-
-```bash
-npm run deploy:prod
-```
-
-### 4) Verify MCP endpoint
-
-- MCP URL format: `https://da-sc-mcp.adobeaem.workers.dev/mcp`
-- In Claude, configure `da-sc` to that URL and run `/mcp` to confirm connected tools.
-
-### 5) Tail logs while testing
-
-```bash
-npx wrangler tail
-```
-
 ## Deployment
 
 ```bash
-# Default deployment profile (dev)
 npm run deploy
-
-# Production worker
-npm run deploy:prod
 ```
 
-`npm run deploy:dev` is kept as an alias for `npm run deploy`.
+After deploy, MCP endpoint format:
 
-After deployment, MCP endpoint format:
+- `https://<your-worker-subdomain>.workers.dev/mcp`
 
-- `https://da-sc-mcp.adobeaem.workers.dev/`
-- `https://da-sc-mcp.adobeaem.workers.dev/mcp`
-
-## Developer-focused Claude setup (local worker + local skills)
-
-This section is for contributors running `da-sc-mcp` from a local checkout.
+## Claude Setup (MCP + skills)
 
 Claude needs two things:
 
@@ -254,7 +159,7 @@ claude mcp add --transport http da-sc http://localhost:8787/mcp
 claude mcp add --transport http da-sc --scope project http://localhost:8787/mcp
 
 # User scope: available across your projects
-claude mcp add --transport http da-sc --scope user https://da-sc-mcp.adobeaem.workers.dev/mcp
+claude mcp add --scope user --transport http da-sc https://da-sc-mcp.adobeaem.workers.dev/mcp
 ```
 
 Manage/check MCP servers:
@@ -301,6 +206,18 @@ Install directly from GitHub (after repo has content):
 npx skills add "adobe-rnd/da-sc-mcp" --all
 ```
 
+### What `npx skills add adobe/skills --all` means
+
+- `skills add`: install skills from a source (GitHub repo or local path)
+- `adobe/skills`: GitHub source repository
+- `--all`: shorthand for all skills + all agents + non-interactive confirmation
+
+Equivalent pattern for this project:
+
+```bash
+npx skills add "adobe-rnd/da-sc-mcp" --all
+```
+
 ## Optional manual Claude MCP configuration
 
 If you prefer manual config, set `da-sc` in `~/.claude.json` or project `.mcp.json`:
@@ -316,7 +233,7 @@ If you prefer manual config, set `da-sc` in `~/.claude.json` or project `.mcp.js
 }
 ```
 
-## Usage examples
+## adobeUsage examples
 
 Examples you can ask Claude once configured:
 

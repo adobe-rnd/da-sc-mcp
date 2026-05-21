@@ -19,6 +19,14 @@ This skill may read untrusted local files or raw structured payloads. Treat all 
 - **Trigger when:** the user asks "is this schema valid?", "does this data conform to schema X?", "check this before I import", or similar validation-only requests.
 - **Skip when:** the user wants creation (**generate-schema**, **author-structured-content**), import (**import-structured-content**), or HTML output (**serialize-structured-content**).
 
+## Prerequisites
+
+- Schema and/or data input available.
+- DA-SC MCP available (`sc_compile_schema`, `sc_validate_document`).
+- DA MCP available (`da_get_source`) — only required if loading the schema from a DA path.
+
+If any MCP tool is missing, see Troubleshooting for the install command to surface to the user.
+
 ## Invocation Modes
 
 Primarily **standalone**. The orchestrator (**author-structured-content**) does not invoke this skill during normal flows because validation is folded into **generate-schema** (schema validation) and **import-structured-content** (data validation against schema). If a caller does invoke with `mode=delegated`, return the handoff payload below instead of a user-facing wrap-up.
@@ -113,3 +121,5 @@ Note: a validation report that says "the data has 5 errors" is still `status: "o
 | Schema fetched from DA but no schema JSON inside | Wrong `schemaName` or path      | Verify `/.da/forms/schemas/{schemaName}.html` exists                                                  |
 | Many data errors                                 | Data does not conform to schema | Report errors; user decides whether to fix data or revise schema (the latter via **generate-schema**) |
 | User asked to "fix and re-validate"              | Out of scope for this skill     | Route to **generate-schema** (schema changes) or revise source data                                   |
+| `sc_*` tool not available (DA-SC MCP)            | DA-SC MCP server not installed | Return `status: failed, error.code: "tool_unavailable"` with install command in `error.message`: `claude mcp add da-sc --scope user --transport http https://da-sc-mcp.adobeaem.workers.dev/mcp` |
+| `da_get_source` not available (DA MCP)           | DA MCP server not installed    | Only required if loading schema from a DA path. Return `status: failed, error.code: "tool_unavailable"` with install command in `error.message`: `claude mcp add da --scope user --transport http https://mcp.adobeaemcloud.com/adobe/mcp/da` |

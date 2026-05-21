@@ -167,6 +167,16 @@ You own this. Sub-skills produced no user-facing output (they ran in delegated m
 
 This skill calls no `sc_*` or `da_*` tools directly. If a sub-skill is unavailable or returns `failed`, stop and surface the failure with the `error.code` and `error.message` from its handoff — silently routing around a missing sub-skill defeats the ownership model and produces inconsistent results.
 
+**When a sub-skill returns `error.code = "tool_unavailable"`** (DA or DA-SC MCP not installed), the sub-skill's `error.message` should contain the install command. Surface that command verbatim to the user so they have a clear next step, e.g.:
+
+> "I couldn't complete the import because the DA MCP server isn't installed in this environment. To enable it, run:
+>
+> ```
+> claude mcp add da --scope user --transport http https://mcp.adobeaemcloud.com/adobe/mcp/da
+> ```
+>
+> Then ask me to retry."
+
 ## Troubleshooting
 
 | Issue                                                                     | Likely Cause                                                 | Fix                                                                           |
@@ -174,6 +184,7 @@ This skill calls no `sc_*` or `da_*` tools directly. If a sub-skill is unavailab
 | Sub-skill returned a user-facing wrap-up instead of handoff payload       | Missing `mode=delegated` in args                             | Re-invoke with correct args                                                   |
 | Sub-skill returned `status: "needs_user_decision"`                        | Reserved key, validation conflict, etc.                      | Follow the Resumption protocol; do not skip the user step                     |
 | Sub-skill returned `status: "failed"` with `error.code = "missing_input"` | Forgot to state required data in the message before invoking | Restate inputs and re-invoke                                                  |
+| Sub-skill returned `status: "failed"` with `error.code = "tool_unavailable"` | DA MCP or DA-SC MCP not installed | Surface the install command from `error.message` verbatim to the user (sub-skills include it). If the message lacks a command, the canonical ones are: DA-SC MCP — `claude mcp add da-sc --scope user --transport http https://da-sc-mcp.adobeaem.workers.dev/mcp`; DA MCP — `claude mcp add da --scope user --transport http https://mcp.adobeaemcloud.com/adobe/mcp/da`. Do not retry until the user confirms the MCP is installed. |
 | Sub-skill returned `status: "failed"` with another `error.code`           | Genuine downstream failure                                   | Surface to user with full error context; do not retry blindly                 |
 | Handoff payload missing the `status` field                                | Sub-skill is out of date                                     | Treat as `failed`; ask user to update the sub-skill                           |
 | Editor URL missing in final response                                      | Step 2 or Step 3 handoff payload was not captured            | Re-run the relevant sub-skill; never construct URLs manually — that's **compute-editor-urls**'s job |

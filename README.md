@@ -59,7 +59,6 @@ skills/
 
 ## Available MCP Tools
 
-
 | Tool                    | Description                                                                 |
 | ----------------------- | --------------------------------------------------------------------------- |
 | `sc_compile_schema`     | Compile schema against DA form constraints and return `editable` + `issues` |
@@ -67,9 +66,7 @@ skills/
 | `sc_serialize_schema`   | Convert schema JSON into DA schema-editor HTML shell                        |
 | `sc_serialize_document` | Convert `{ metadata, data }` document JSON into DA EDS HTML                 |
 
-
 ## Included Skills
-
 
 | Skill                          | Purpose                                                            |
 | ------------------------------ | ------------------------------------------------------------------ |
@@ -77,7 +74,6 @@ skills/
 | `generate-schema`              | Schema-only workflow                                               |
 | `import-structured-content`    | Existing-schema import + optional persistence                      |
 | `serialize-structured-content` | JSON -> HTML serialization-only workflow (no write by default)     |
-
 
 ## Prerequisites
 
@@ -93,11 +89,11 @@ cd da-sc-mcp
 npm install
 ```
 
-## Quick Start for non-developers (Claude only)
+## Claude-Only Quick Start
 
-For the simplest MCP + skills setup, see:
+For the simplest Claude MCP + skills setup, see:
 
-- [`NON-DEVELOPER-SETUP.md`](./NON-DEVELOPER-SETUP.md)
+- [`CLAUDE-QUICK-START.md`](./CLAUDE-QUICK-START.md)
 
 ## Development
 

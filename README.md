@@ -10,7 +10,7 @@ This server exposes the form-core schema/document operations over Streamable HTT
 - **Remote access**: deployable on Cloudflare Workers
 - **Streamable HTTP transport**: modern MCP transport protocol
 - **No auth in this server**: intentionally auth-free; persistence/auth flows are handled by DA admin tooling
-- **Companion skills included**: author/import/generate/serialize structured content workflows
+- **Companion skills included**: author/import/generate/serialize/validate/editor-URL workflows
 
 ## Architecture
 
@@ -37,24 +37,34 @@ This server exposes the form-core schema/document operations over Streamable HTT
 
 ```text
 src/
-├── index.ts                 # Worker entry point + MCP transport
+├── index.ts                          # Worker entry point + MCP transport
 ├── mcp/
-│   ├── server.ts            # Tool registration/schemas
-│   └── handlers.ts          # Tool handlers
+│   ├── server.ts                     # Tool registration/schemas
+│   └── handlers.ts                   # Tool handlers
 └── form-core/
-    ├── loader.ts            # form-core bootstrap + DOM polyfill setup
-    ├── bundle-lock.json
-    ├── bundled.d.ts         # types for bundled form-core exports
-    └── bundled.js           # generated bundle (gitignored)
-
-scripts/
-└── bundle-form-core.mjs
+    ├── loader.ts                     # form-core bootstrap + DOM polyfill setup
+    ├── bundle-lock.json              # lockfile for bundled form-core source
+    ├── bundled.d.ts                  # types for bundled form-core exports
+    └── bundled.js                    # generated bundle (gitignored)
 
 skills/
 ├── author-structured-content/
 ├── generate-schema/
 ├── import-structured-content/
-└── serialize-structured-content/
+├── serialize-structured-content/
+├── validate-structured-content/
+└── compute-editor-urls/
+
+test/
+└── mcp/handlers.test.ts
+
+scripts/
+└── bundle-form-core.mjs
+
+CLAUDE-QUICK-START.md
+README.md
+package.json
+wrangler.toml
 ```
 
 ## Available MCP Tools
@@ -71,9 +81,11 @@ skills/
 | Skill                          | Purpose                                                            |
 | ------------------------------ | ------------------------------------------------------------------ |
 | `author-structured-content`    | End-to-end source -> schema -> document -> optional DA persistence |
+| `compute-editor-urls`          | Compute DA schema/document editor URLs from org/site/path          |
 | `generate-schema`              | Schema-only workflow                                               |
 | `import-structured-content`    | Existing-schema import + optional persistence                      |
 | `serialize-structured-content` | JSON -> HTML serialization-only workflow (no write by default)     |
+| `validate-structured-content`  | Validation-only workflow for schema and/or document data           |
 
 ## Prerequisites
 

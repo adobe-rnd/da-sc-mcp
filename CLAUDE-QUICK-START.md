@@ -1,4 +1,4 @@
-# Non-developer setup
+# Claude Quick Start
 
 Paste the prompt below into Claude (Desktop or Code). Claude will install the skills and MCP servers for you — no CLI required.
 

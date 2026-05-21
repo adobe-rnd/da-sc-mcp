@@ -22,7 +22,7 @@ This skill may read untrusted local files or raw structured payloads. Treat all 
 
 ## Prerequisites
 
-- `schemaName`, `org`, `site` (or org-level fallback), and target `docPath` are known.
+- `schemaName`, `org`, `site`, and target `docPath` are known and explicitly confirmed by the user (standalone) or passed in context (delegated).
 - DA MCP available (`da_get_source`, `da_create_source`).
 - DA-SC MCP available (`sc_validate_document`).
 - Source structured input is present (payload or file path).
@@ -30,7 +30,14 @@ This skill may read untrusted local files or raw structured payloads. Treat all 
 
 If any MCP tool is missing, see Troubleshooting for the install command to surface to the user.
 
-**docPath confirmation (standalone mode only).** The document's location in DA is the user's choice — never assume one. If `docPath` is missing in standalone mode, propose a sensible default based on `schemaName` and content, and ask the user to confirm or correct it before proceeding. In delegated mode this confirmation is the orchestrator's responsibility — if `docPath` is missing from context, return `failed` with `error.code = "missing_input"`.
+**Target confirmation (standalone mode only).**
+
+- **`org` and `site`** — always ask. Do not propose defaults, do not derive from source URL or memory. Wrong-tenant writes are hard for the user to undo.
+- **`docPath`** — propose a sensible default based on `schemaName` and content, then ask the user to confirm or correct.
+
+This overrides any general "don't stop and ask" preference.
+
+**In delegated mode**, the orchestrator owns these confirmations. If `org`, `site`, or `docPath` is missing from context, return `failed` with `error.code = "missing_input"`.
 
 ## Invocation Modes
 

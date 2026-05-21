@@ -29,12 +29,12 @@ This skill drives the chain. Each sub-skill runs in **delegated mode**, returns 
 
 ## Required Inputs
 
-- `org`, `site`
-- Source input (URL, file path, image, PDF, raw payload, topic/brief, etc.)
-- `schemaName` — derive from source if missing; confirm with the user only if truly ambiguous. The schema's storage location is fixed (`/.da/forms/schemas/{schemaName}.html`) so you don't need to ask where to save it.
-- `docPath` — **always confirm with the user before saving the document.** Unlike the schema (fixed path), the document's location in DA is the user's choice. If the user didn't state a path, propose a sensible default based on `schemaName`, content, and any folder hint they gave (e.g., `/content/blog/posts/<derived-slug>`), then ask them to confirm or correct it. Never guess silently — saving a document to the wrong location is hard for the user to undo and surfaces later as broken links.
+- **`org` and `site`** — the DA tenant. **Always ask the user.** Never derive from memory, prior sessions, or a source URL. Wrong-tenant writes are hard for the user to undo.
+- **Source input** — URL, file path, image, PDF, raw payload, topic/brief, etc.
+- **`schemaName`** — derive from source if missing; confirm only if truly ambiguous. The storage location is fixed (`/.da/forms/schemas/{schemaName}.html`).
+- **`docPath`** — always confirm with the user before saving. The document's location is the user's choice. Propose a sensible default based on `schemaName` and content; never save without confirmation.
 
-If `org`, `site`, or source input is missing and can't be reasonably derived, ask the user once and proceed.
+These requirements override any general "don't stop and ask" preference. If source input is missing or unclear, ask the user.
 
 ## How Delegation Passes Data
 
@@ -74,15 +74,14 @@ The sub-skill scans its prior context, sees the recorded decisions, applies them
 
 ## Orchestration Workflow
 
-### Step 0 — Confirm target document path with the user
+### Step 0 — Confirm target with the user (org, site, document path)
 
-Before any delegation, you must have a `docPath` the user has confirmed. The schema location is fixed and needs no confirmation, but the document location is the user's choice.
+Before any delegation, all three values must be confirmed by the user in the current conversation. Memory, prior sessions, and hints in the source URL do not count.
 
-- If the user explicitly stated a path, use it.
-- If they gave a folder hint, propose a full path inside that folder (filename derived from `schemaName` or content) and ask them to confirm.
-- If they gave nothing, propose a default (e.g., `/content/<schemaName>/<derived-slug>`) and ask them to confirm or correct.
+- **`org` and `site`** — always ask. Do not propose defaults; do not derive from source URL or memory.
+- **`docPath`** — the schema location is fixed (`/.da/forms/schemas/{schemaName}.html`) and needs no confirmation, but the document path is the user's choice. Propose a sensible default based on `schemaName`, content, and any folder hint, then ask the user to confirm or correct.
 
-Wait for an explicit confirmation. Do not proceed to Step 1 with a guessed path.
+A general "don't stop and ask" preference does not override this step. Wait for explicit confirmation of all three before invoking any sub-skill.
 
 ### Step 1 — Detect source type and prepare a structured payload
 

@@ -61,8 +61,8 @@ If both are present, validate the schema first, then validate the data against i
 
 Call `sc_compile_schema` with the schema JSON.
 
-- `editable: true` and `issues: []` → schema OK.
-- Otherwise collect issues with `reason` and pointer.
+- `valid: true` and `schemaIssues: []` → schema OK.
+- Otherwise collect entries from `schemaIssues` with `reason` and pointer.
 
 ### Step 3 — Validate data (if provided and schema present)
 

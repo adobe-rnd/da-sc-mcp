@@ -81,11 +81,11 @@ Record all approved decisions as a mapping table (`oldKey -> newKey` with affect
 
 ### Step 2 — Draft schema
 
-Draft schema JSON using the official schema spec only: [form-v2 schema-spec.md](https://raw.githubusercontent.com/adobe/da-nx/form-v2/nx/blocks/form/docs/schema-spec.md). The spec is the single source of truth — don't add local rules here, because spec rules drift over time and any rule duplicated in this skill will eventually fall behind. Conformance is checked in Step 3.
+Draft schema JSON using the official schema spec only: [da-sc-sdk schema-spec.md](https://raw.githubusercontent.com/adobe-rnd/da-sc-sdk/refs/heads/main/docs/schema-spec.md). The spec is the single source of truth — don't add local rules here, because spec rules drift over time and any rule duplicated in this skill will eventually fall behind. Conformance is checked in Step 3.
 
 ### Step 3 — Validate
 
-Run `sc_compile_schema`. If clean (`editable: true`, `issues: []`), continue. Otherwise fix by issue `reason` and re-run until clean.
+Run `sc_compile_schema`. If clean (`valid: true`, `schemaIssues: []`), continue. Otherwise fix by issue `reason` and re-run until clean.
 
 ### Step 4 — Serialize schema HTML
 
@@ -185,4 +185,4 @@ Every payload starts with a `status` field. Three possible shapes:
 
 ## Resources
 
-- [form-v2 schema-spec.md](https://raw.githubusercontent.com/adobe/da-nx/form-v2/nx/blocks/form/docs/schema-spec.md)
+- [da-sc-sdk schema-spec.md](https://raw.githubusercontent.com/adobe-rnd/da-sc-sdk/refs/heads/main/docs/schema-spec.md)

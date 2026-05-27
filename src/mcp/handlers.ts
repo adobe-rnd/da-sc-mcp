@@ -1,8 +1,9 @@
 /**
- * MCP Tool Handlers — DA Structured Content (form-v2 core)
+ * MCP Tool Handlers — DA Structured Content
  */
 
-import type { FormCore } from '../form-core/loader';
+import { convertJsonToHtml, validateData, validateSchema } from 'da-sc-sdk';
+import type { Document, ValidationError } from 'da-sc-sdk';
 
 // Matches schema-editor/utils/utils.js HTML_SHELL exactly.
 const SCHEMA_HTML_SHELL =
@@ -12,24 +13,30 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-export async function handleCompileSchema(
-  formCore: FormCore,
-  args: { schema: string },
-) {
+function mapValidationErrors(errors: Record<string, ValidationError>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(errors).map(([pointer, error]) => [pointer, error.message]),
+  );
+}
+
+export async function handleCompileSchema(args: { schema: string }) {
   try {
-    const result = formCore.compileSchema(JSON.parse(args.schema));
-    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    const { valid, schemaIssues } = validateSchema({ schema: JSON.parse(args.schema) });
+    return { content: [{ type: 'text' as const, text: JSON.stringify({ valid, schemaIssues }, null, 2) }] };
   } catch (err) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ error: errorMessage(err) }) }] };
   }
 }
 
-export async function handleValidateDocument(
-  formCore: FormCore,
-  args: { schema: string; data: string },
-) {
+export async function handleValidateDocument(args: { schema: string; data: string }) {
   try {
-    const result = formCore.validateAgainst(JSON.parse(args.schema), JSON.parse(args.data));
+    const { errors } = validateData({
+      schema: JSON.parse(args.schema),
+      data: JSON.parse(args.data),
+    });
+    const result = {
+      errorsByPointer: mapValidationErrors(errors),
+    };
     return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ error: errorMessage(err) }) }] };
@@ -46,10 +53,7 @@ export async function handleSerializeSchema(args: { schema: string }) {
   }
 }
 
-export async function handleSerializeDocument(
-  formCore: FormCore,
-  args: { document: string },
-) {
+export async function handleSerializeDocument(args: { document: string }) {
   try {
     const doc = JSON.parse(args.document) as {
       metadata?: { schemaName?: string; title?: string };
@@ -75,8 +79,11 @@ export async function handleSerializeDocument(
       };
     }
 
-    const html = formCore.json2html(doc);
-    return { content: [{ type: 'text' as const, text: html }] };
+    const serialized = convertJsonToHtml({ json: doc as Document });
+    if ('error' in serialized) {
+      throw new Error(serialized.error);
+    }
+    return { content: [{ type: 'text' as const, text: serialized.html }] };
   } catch (err) {
     return {
       isError: true,

@@ -1,6 +1,7 @@
 import {
   beforeEach, describe, expect, it, vi,
 } from 'vitest';
+import { convertJsonToHtml, validateData, validateSchema } from 'da-sc-sdk';
 import {
   handleCompileSchema,
   handleValidateDocument,
@@ -8,36 +9,32 @@ import {
   handleSerializeDocument,
 } from '../../src/mcp/handlers';
 
+vi.mock('da-sc-sdk', () => ({
+  validateSchema: vi.fn(),
+  validateData: vi.fn(),
+  convertJsonToHtml: vi.fn(),
+}));
+
 const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
 
-function createFormCoreMock() {
-  return {
-    compileSchema: vi.fn((schema: unknown): unknown => ({ schema })),
-    validateAgainst: vi.fn((schema: unknown, data: unknown): unknown => ({ schema, data })),
-    json2html: vi.fn(() => '<body>serialized</body>'),
-  };
-}
-
 describe('sc handlers', () => {
-  let formCore: ReturnType<typeof createFormCoreMock>;
-
   beforeEach(() => {
-    formCore = createFormCoreMock();
+    vi.resetAllMocks();
   });
 
   describe('handleCompileSchema', () => {
     it('parses schema and returns compile result as pretty JSON text', async () => {
-      formCore.compileSchema.mockReturnValue({ editable: true, issues: [] });
+      vi.mocked(validateSchema).mockReturnValue({ valid: true, schemaIssues: [] });
 
-      const result = await handleCompileSchema(formCore, { schema: '{"type":"object"}' });
+      const result = await handleCompileSchema({ schema: '{"type":"object"}' });
 
-      expect(formCore.compileSchema).toHaveBeenCalledWith({ type: 'object' });
+      expect(validateSchema).toHaveBeenCalledWith({ schema: { type: 'object' } });
       expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toBe(JSON.stringify({ editable: true, issues: [] }, null, 2));
+      expect(result.content[0].text).toBe(JSON.stringify({ valid: true, schemaIssues: [] }, null, 2));
     });
 
     it('returns error payload when schema JSON cannot be parsed', async () => {
-      const result = await handleCompileSchema(formCore, { schema: '{bad' });
+      const result = await handleCompileSchema({ schema: '{bad' });
 
       const payload = JSON.parse(result.content[0].text);
       expect(payload.error).toBeDefined();
@@ -45,21 +42,36 @@ describe('sc handlers', () => {
   });
 
   describe('handleValidateDocument', () => {
-    it('parses inputs and returns validate result as pretty JSON text', async () => {
-      formCore.validateAgainst.mockReturnValue({ errorsByPointer: {} });
+    it('maps SDK validation errors to errorsByPointer messages', async () => {
+      vi.mocked(validateData).mockReturnValue({
+        valid: false,
+        errors: {
+          '/data/name': {
+            keyword: 'required',
+            instancePath: '/data/name',
+            params: { missingProperty: 'name' },
+            message: 'This field is required.',
+          },
+        },
+        schemaIssues: [],
+      });
 
-      const result = await handleValidateDocument(formCore, {
+      const result = await handleValidateDocument({
         schema: '{"type":"object"}',
         data: '{"name":"x"}',
       });
 
-      expect(formCore.validateAgainst).toHaveBeenCalledWith({ type: 'object' }, { name: 'x' });
+      expect(validateData).toHaveBeenCalledWith({ schema: { type: 'object' }, data: { name: 'x' } });
       expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toBe(JSON.stringify({ errorsByPointer: {} }, null, 2));
+      expect(result.content[0].text).toBe(JSON.stringify({
+        errorsByPointer: {
+          '/data/name': 'This field is required.',
+        },
+      }, null, 2));
     });
 
     it('returns error payload when data JSON cannot be parsed', async () => {
-      const result = await handleValidateDocument(formCore, {
+      const result = await handleValidateDocument({
         schema: '{"type":"object"}',
         data: '{bad',
       });
@@ -90,7 +102,7 @@ describe('sc handlers', () => {
 
   describe('handleSerializeDocument', () => {
     it('returns error when metadata.schemaName is missing', async () => {
-      const result = await handleSerializeDocument(formCore, {
+      const result = await handleSerializeDocument({
         document: JSON.stringify({ metadata: { title: 'Title' }, data: {} }),
       });
 
@@ -99,7 +111,7 @@ describe('sc handlers', () => {
     });
 
     it('returns error when metadata.title is missing or blank', async () => {
-      const result = await handleSerializeDocument(formCore, {
+      const result = await handleSerializeDocument({
         document: JSON.stringify({ metadata: { schemaName: 'my-schema', title: '   ' }, data: {} }),
       });
 
@@ -107,15 +119,26 @@ describe('sc handlers', () => {
       expect(JSON.parse(result.content[0].text).error).toContain('metadata.title is required');
     });
 
-    it('serializes valid document with json2html', async () => {
+    it('serializes valid document with convertJsonToHtml', async () => {
       const doc = { metadata: { schemaName: 'my-schema', title: 'Hello' }, data: { name: 'x' } };
-      formCore.json2html.mockReturnValue('<body>ok</body>');
+      vi.mocked(convertJsonToHtml).mockReturnValue({ html: '<body>ok</body>' });
 
-      const result = await handleSerializeDocument(formCore, { document: JSON.stringify(doc) });
+      const result = await handleSerializeDocument({ document: JSON.stringify(doc) });
 
-      expect(formCore.json2html).toHaveBeenCalledWith(doc);
+      expect(convertJsonToHtml).toHaveBeenCalledWith({ json: doc });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toBe('<body>ok</body>');
+    });
+
+    it('returns error when convertJsonToHtml fails', async () => {
+      vi.mocked(convertJsonToHtml).mockReturnValue({ error: 'Invalid JSON payload.' });
+
+      const result = await handleSerializeDocument({
+        document: JSON.stringify({ metadata: { schemaName: 'my-schema', title: 'Hello' }, data: {} }),
+      });
+
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({ error: 'Invalid JSON payload.' });
     });
   });
 

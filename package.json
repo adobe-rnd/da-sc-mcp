@@ -1,12 +1,10 @@
 {
   "name": "da-sc-mcp",
   "version": "0.1.0",
-  "description": "Remote MCP server for DA Structured Content (form-v2 core) on Cloudflare Workers",
+  "description": "Remote MCP server for DA Structured Content (da-sc-sdk) on Cloudflare Workers",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "bundle": "node scripts/bundle-form-core.mjs",
-    "bundle:update-lock": "FORM_CORE_LOCK_MODE=update node scripts/bundle-form-core.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "deploy:dev": "wrangler deploy",
@@ -18,12 +16,11 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "linkedom": "^0.18.10",
+    "da-sc-sdk": "https://codeload.github.com/adobe-rnd/da-sc-sdk/tar.gz/5102c21b31bbc01e59cb51052a89f00de900de29",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
-    "esbuild": "^0.25.12",
     "typescript": "^5.7.2",
     "vitest": "^4.1.7",
     "wrangler": "^4.62.0"

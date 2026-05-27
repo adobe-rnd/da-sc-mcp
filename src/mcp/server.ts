@@ -5,7 +5,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import type { FormCore } from '../form-core/loader';
 import {
   handleCompileSchema,
   handleValidateDocument,
@@ -13,19 +12,19 @@ import {
   handleSerializeDocument,
 } from './handlers';
 
-export function createServer(formCore: FormCore, version: string): McpServer {
+export function createServer(version: string): McpServer {
   const server = new McpServer({ name: 'da-sc', version });
 
   server.registerTool(
     'sc_compile_schema',
     {
       description:
-        'Compile and validate a JSON Schema against the DA form spec. Returns { editable, issues } — issues is an array of objects with pointer, reason, feature fields. reason codes: unsupported-composition, unsupported-type, type-as-array, missing-type, external-ref, unresolved-ref.',
+        'Compile and validate a JSON Schema against the DA form spec. Returns { valid, schemaIssues } — schemaIssues is an array of objects with pointer, reason, feature fields. valid is true iff schemaIssues is empty. reason codes: unsupported-composition, unsupported-type, type-as-array, missing-type, external-ref, unresolved-ref, invalid-pattern.',
       inputSchema: z.object({
         schema: z.string().describe('JSON Schema as a JSON string'),
       }),
     },
-    (args) => handleCompileSchema(formCore, args) as Promise<CallToolResult>,
+    (args) => handleCompileSchema(args) as Promise<CallToolResult>,
   );
 
   server.registerTool(
@@ -42,7 +41,7 @@ export function createServer(formCore: FormCore, version: string): McpServer {
           ),
       }),
     },
-    (args) => handleValidateDocument(formCore, args) as Promise<CallToolResult>,
+    (args) => handleValidateDocument(args) as Promise<CallToolResult>,
   );
 
   server.registerTool(
@@ -72,7 +71,7 @@ export function createServer(formCore: FormCore, version: string): McpServer {
           ),
       }),
     },
-    (args) => handleSerializeDocument(formCore, args) as Promise<CallToolResult>,
+    (args) => handleSerializeDocument(args) as Promise<CallToolResult>,
   );
 
   return server;

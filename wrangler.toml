@@ -3,9 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2025-11-17"
 compatibility_flags = ["nodejs_compat"]
 
-[build]
-command = "npm run bundle"
-
 [vars]
 VERSION = "0.1.0-dev"
 ENVIRONMENT = "dev"

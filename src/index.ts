@@ -3,7 +3,6 @@
  */
 
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { getFormCore } from './form-core/loader';
 import { createServer } from './mcp/server';
 
 export interface Env {
@@ -52,8 +51,7 @@ export default {
       });
     }
 
-    const formCore = await getFormCore();
-    const server = createServer(formCore, env.VERSION ?? '0.1.0');
+    const server = createServer(env.VERSION ?? '0.1.0');
 
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,

@@ -2,7 +2,7 @@
 
 A remote Model Context Protocol (MCP) server for DA Structured Content on Cloudflare Workers.
 
-This server exposes the form-core schema/document operations over Streamable HTTP so LLM clients (Claude, Cursor, etc.) can compile, validate, and serialize structured content.
+This server exposes DA Structured Content schema/document operations over Streamable HTTP so LLM clients (Claude, Cursor, etc.) can compile, validate, and serialize structured content.
 
 ## Features
 
@@ -27,8 +27,8 @@ This server exposes the form-core schema/document operations over Streamable HTT
 │  │ MCP Server (4 tools)   │  │
 │  └────────────────────────┘  │
 │  ┌────────────────────────┐  │
-│  │ bundled form-core      │  │
-│  │ compile/validate/json2html│
+│  │ da-sc-sdk dependency   │  │
+│  │ schema/data/html APIs  │  │
 │  └────────────────────────┘  │
 └──────────────────────────────┘
 ```
@@ -38,14 +38,9 @@ This server exposes the form-core schema/document operations over Streamable HTT
 ```text
 src/
 ├── index.ts                          # Worker entry point + MCP transport
-├── mcp/
-│   ├── server.ts                     # Tool registration/schemas
-│   └── handlers.ts                   # Tool handlers
-└── form-core/
-    ├── loader.ts                     # form-core bootstrap + DOM polyfill setup
-    ├── bundle-lock.json              # lockfile for bundled form-core source
-    ├── bundled.d.ts                  # types for bundled form-core exports
-    └── bundled.js                    # generated bundle (gitignored)
+└── mcp/
+    ├── server.ts                     # Tool registration/schemas
+    └── handlers.ts                   # Tool handlers + direct da-sc-sdk calls
 
 skills/
 ├── author-structured-content/
@@ -57,9 +52,6 @@ skills/
 
 test/
 └── mcp/handlers.test.ts
-
-scripts/
-└── bundle-form-core.mjs
 
 CLAUDE-QUICK-START.md
 README.md
@@ -123,12 +115,6 @@ Endpoints:
 Recommended client header:
 
 - `Accept: application/json, text/event-stream`
-
-### Build bundle
-
-```bash
-npm run bundle
-```
 
 ### Testing
 

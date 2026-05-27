@@ -2,4 +2,4 @@ node_modules/
 dist/
 .wrangler/
 .dev.vars
-src/form-core/bundled.js
+.DS_Store

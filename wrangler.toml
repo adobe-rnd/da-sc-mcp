@@ -2,14 +2,22 @@ name = "da-sc-mcp"
 main = "src/index.ts"
 compatibility_date = "2025-11-17"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [vars]
-VERSION = "0.1.0-dev"
+VERSION = "@@VERSION@@-dev"
 ENVIRONMENT = "dev"
 
+# CI environment
+[env.ci]
+name = "da-sc-mcp-ci"
+[env.ci.vars]
+VERSION = "@@VERSION@@-ci"
+ENVIRONMENT = "ci"
+
+# Production environment
 [env.production]
 name = "da-sc-mcp"
-
 [env.production.vars]
-VERSION = "0.1.0"
+VERSION = "@@VERSION@@"
 ENVIRONMENT = "production"

@@ -4,14 +4,22 @@
   "description": "Remote MCP server for DA Structured Content (da-sc-sdk) on Cloudflare Workers",
   "main": "src/index.ts",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adobe-rnd/da-sc-mcp.git"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "deploy:dev": "wrangler deploy",
-    "deploy:prod": "wrangler deploy --env production",
+    "deploy:ci": "node prepare-deploy.js && wrangler deploy -e ci -c wrangler-versioned.toml",
+    "deploy:production": "node prepare-deploy.js && wrangler deploy -e production -c wrangler-versioned.toml",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepare": "husky",
+    "semantic-release": "semantic-release",
+    "semantic-release-dry": "semantic-release --dry-run --no-ci --branches $CI_BRANCH"
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -20,9 +28,22 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@adobe/eslint-config-helix": "^2.0.8",
     "@cloudflare/workers-types": "^4.20241218.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^8.57.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.1",
+    "semantic-release": "^24.2.7",
     "typescript": "^5.7.2",
     "vitest": "^4.1.7",
     "wrangler": "^4.62.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": "eslint --fix"
   }
 }

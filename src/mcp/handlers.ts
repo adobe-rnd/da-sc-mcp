@@ -1,13 +1,20 @@
-/**
- * MCP Tool Handlers — DA Structured Content
+/*
+ * Copyright 2025 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
  */
 
 import { convertJsonToHtml, validateData, validateSchema } from 'da-sc-sdk';
 import type { Document, ValidationError } from 'da-sc-sdk';
 
 // Matches schema-editor/utils/utils.js HTML_SHELL exactly.
-const SCHEMA_HTML_SHELL =
-  '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
+const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);

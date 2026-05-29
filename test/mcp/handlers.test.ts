@@ -12,7 +12,7 @@
 import {
   beforeEach, describe, expect, it, vi,
 } from 'vitest';
-import { convertJsonToHtml, validateData, validateSchema } from 'da-sc-sdk';
+import { convertJsonToHtml, validateData, validateSchema } from '@adobe/da-sc-sdk';
 import {
   handleCompileSchema,
   handleValidateDocument,
@@ -20,7 +20,7 @@ import {
   handleSerializeDocument,
 } from '../../src/mcp/handlers';
 
-vi.mock('da-sc-sdk', () => ({
+vi.mock('@adobe/da-sc-sdk', () => ({
   validateSchema: vi.fn(),
   validateData: vi.fn(),
   convertJsonToHtml: vi.fn(),

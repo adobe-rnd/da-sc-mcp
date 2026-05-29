@@ -1,7 +1,7 @@
 {
   "name": "da-sc-mcp",
   "version": "0.1.0",
-  "description": "Remote MCP server for DA Structured Content (da-sc-sdk) on Cloudflare Workers",
+  "description": "Remote MCP server for DA Structured Content (@adobe/da-sc-sdk) on Cloudflare Workers",
   "main": "src/index.ts",
   "type": "module",
   "repository": {
@@ -23,8 +23,8 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
+    "@adobe/da-sc-sdk": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "da-sc-sdk": "https://codeload.github.com/adobe-rnd/da-sc-sdk/tar.gz/5102c21b31bbc01e59cb51052a89f00de900de29",
     "zod": "^4.0.0"
   },
   "devDependencies": {

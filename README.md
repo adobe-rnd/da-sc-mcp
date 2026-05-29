@@ -27,7 +27,7 @@ This server exposes DA Structured Content schema/document operations over Stream
 │  │ MCP Server (4 tools)   │  │
 │  └────────────────────────┘  │
 │  ┌────────────────────────┐  │
-│  │ da-sc-sdk dependency   │  │
+│  │ @adobe/da-sc-sdk       │  │
 │  │ schema/data/html APIs  │  │
 │  └────────────────────────┘  │
 └──────────────────────────────┘
@@ -40,7 +40,7 @@ src/
 ├── index.ts                          # Worker entry point + MCP transport
 └── mcp/
     ├── server.ts                     # Tool registration/schemas
-    └── handlers.ts                   # Tool handlers + direct da-sc-sdk calls
+    └── handlers.ts                   # Tool handlers + direct @adobe/da-sc-sdk calls
 
 skills/
 ├── author-structured-content/

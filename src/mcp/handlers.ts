@@ -10,8 +10,8 @@
  * governing permissions and limitations under the License.
  */
 
-import { convertJsonToHtml, validateData, validateSchema } from 'da-sc-sdk';
-import type { Document, ValidationError } from 'da-sc-sdk';
+import { convertJsonToHtml, validateData, validateSchema } from '@adobe/da-sc-sdk';
+import type { Document, ValidationError } from '@adobe/da-sc-sdk';
 
 // Matches schema-editor/utils/utils.js HTML_SHELL exactly.
 const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';

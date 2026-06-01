@@ -118,6 +118,8 @@ Recommended client header:
 
 ### Testing
 
+`npm run test` includes both mocked unit tests and real-SDK integration tests that verify MCP response shape compatibility.
+
 ```bash
 npm run test
 npm run test:watch

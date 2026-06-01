@@ -40,6 +40,9 @@ jobs:
           node-version: '22.x'
       - run: npm install
       - name: Branch Deployment
+        # Temporarily disabled until CLOUDFLARE_API_TOKEN is configured in GitHub secrets.
+        # Re-enable by removing this `if: false`.
+        if: false
         run: npm run deploy:ci
       - name: Semantic Release (Dry Run)
         run: npm run semantic-release-dry

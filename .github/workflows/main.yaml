@@ -49,7 +49,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # Temporarily disabled until v0.1.0 is tagged on main.
+    # Re-enable with: if: github.ref == 'refs/heads/main'
+    if: false
     needs: test
     steps:
       - uses: actions/checkout@v6

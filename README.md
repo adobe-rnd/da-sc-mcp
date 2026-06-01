@@ -1,33 +1,32 @@
 # da-sc-mcp
 
-A remote Model Context Protocol (MCP) server for DA Structured Content on Cloudflare Workers.
+A remote Model Context Protocol (MCP) server for DA Structured Content, deployed on Cloudflare Workers.
 
-This server exposes DA Structured Content schema/document operations over Streamable HTTP so LLM clients (Claude, Cursor, etc.) can compile, validate, and serialize structured content.
+The server exposes schema compilation, validation, and serialization over Streamable HTTP, enabling MCP-aware clients to author and import DA Structured Content programmatically.
 
 ## Features
 
-- **4 Structured Content tools**: compile, validate, serialize schema, serialize document
-- **Remote access**: deployable on Cloudflare Workers
-- **Streamable HTTP transport**: modern MCP transport protocol
-- **No auth in this server**: intentionally auth-free; persistence/auth flows are handled by DA admin tooling
-- **Companion skills included**: author/import/generate/serialize/validate/editor-URL workflows
+- **MCP tools** for compiling, validating, and serializing DA Structured Content
+- **Remote deployment** on Cloudflare Workers
+- **Streamable HTTP transport** — the modern MCP transport protocol
+- **Stateless and auth-free** — persistence and authentication are delegated to DA admin tooling
+- **Companion skills** for author, import, generate, serialize, validate, and editor-URL workflows
 
 ## Architecture
 
 ```text
 ┌─────────────────┐
 │   MCP Client    │
-│ (Claude/Cursor) │
 └────────┬────────┘
          │ Streamable HTTP
          ↓
 ┌──────────────────────────────┐
 │ da-sc-mcp (Cloudflare Worker)│
 │  ┌────────────────────────┐  │
-│  │ MCP Server (4 tools)   │  │
+│  │ MCP Server (tools)     │  │
 │  └────────────────────────┘  │
 │  ┌────────────────────────┐  │
-│  │ da-sc-sdk dependency   │  │
+│  │ @adobe/da-sc-sdk       │  │
 │  │ schema/data/html APIs  │  │
 │  └────────────────────────┘  │
 └──────────────────────────────┘
@@ -39,21 +38,25 @@ This server exposes DA Structured Content schema/document operations over Stream
 src/
 ├── index.ts                          # Worker entry point + MCP transport
 └── mcp/
-    ├── server.ts                     # Tool registration/schemas
-    └── handlers.ts                   # Tool handlers + direct da-sc-sdk calls
+    ├── server.ts                     # Tool registration and schemas
+    └── handlers.ts                   # Tool handlers and @adobe/da-sc-sdk calls
 
 skills/
 ├── author-structured-content/
+├── compute-editor-urls/
 ├── generate-schema/
 ├── import-structured-content/
 ├── serialize-structured-content/
-├── validate-structured-content/
-└── compute-editor-urls/
+└── validate-structured-content/
 
 test/
+├── mcp/handlers.integration.test.ts
 └── mcp/handlers.test.ts
 
-CLAUDE-QUICK-START.md
+docs/
+├── CLAUDE-QUICK-START.md
+└── release-flow.md
+
 README.md
 package.json
 wrangler.toml
@@ -70,20 +73,20 @@ wrangler.toml
 
 ## Included Skills
 
-| Skill                          | Purpose                                                            |
-| ------------------------------ | ------------------------------------------------------------------ |
-| `author-structured-content`    | End-to-end source -> schema -> document -> optional DA persistence |
-| `compute-editor-urls`          | Compute DA schema/document editor URLs from org/site/path          |
-| `generate-schema`              | Schema-only workflow                                               |
-| `import-structured-content`    | Existing-schema import + optional persistence                      |
-| `serialize-structured-content` | JSON -> HTML serialization-only workflow (no write by default)     |
-| `validate-structured-content`  | Validation-only workflow for schema and/or document data           |
+| Skill                          | Purpose                                                         |
+| ------------------------------ | --------------------------------------------------------------- |
+| `author-structured-content`    | End-to-end source → schema → document → optional DA persistence |
+| `compute-editor-urls`          | Compute DA schema and document editor URLs from org/site/path   |
+| `generate-schema`              | Schema-only workflow                                            |
+| `import-structured-content`    | Existing-schema import with optional persistence                |
+| `serialize-structured-content` | JSON → HTML serialization (no write by default)                 |
+| `validate-structured-content`  | Validation for schemas and document data                        |
 
 ## Prerequisites
 
-- Node.js 18+ and npm
-- Cloudflare account + Wrangler CLI (for deployment)
-- Claude Code (optional, for MCP + skills usage)
+- Node.js 18 or later, with npm
+- A Cloudflare account and the Wrangler CLI (for deployment)
+- Claude Code — required only for MCP and skills usage
 
 ## Installation
 
@@ -93,11 +96,9 @@ cd da-sc-mcp
 npm install
 ```
 
-## Claude-Only Quick Start
+## Quick Start for Claude
 
-For the simplest Claude MCP + skills setup, see:
-
-- [`CLAUDE-QUICK-START.md`](./CLAUDE-QUICK-START.md)
+For the simplest Claude MCP and skills setup, see [`docs/CLAUDE-QUICK-START.md`](./docs/CLAUDE-QUICK-START.md).
 
 ## Development
 
@@ -118,6 +119,8 @@ Recommended client header:
 
 ### Testing
 
+`npm run test` runs both mocked unit tests and real-SDK integration tests that verify MCP response-shape compatibility.
+
 ```bash
 npm run test
 npm run test:watch
@@ -130,33 +133,35 @@ npm run type-check
 npm run deploy
 ```
 
-After deploy, MCP endpoint format:
+After deployment, the MCP endpoint is available at:
 
-- `https://<your-worker-subdomain>.workers.dev/mcp`
+```text
+https://<your-worker-subdomain>.workers.dev/mcp
+```
 
-## Claude Setup (MCP + skills)
+## Claude Setup (MCP and Skills)
 
-Claude needs two things:
+Claude requires two things:
 
-1. `da-sc` MCP server configuration
-2. Structured-content skills installation (recommended)
+1. A `da-sc` MCP server configuration
+2. Structured-content skills (recommended)
 
-### 1) Configure MCP without editing JSON manually
+### 1. Configure the MCP Server
 
-Official docs: [Claude Code MCP](https://code.claude.com/docs/en/mcp)
+See the official [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp) for the full reference.
 
 ```bash
 # Local scope (default): current project only
 claude mcp add --transport http da-sc http://localhost:8787/mcp
 
-# Project scope: shared in .mcp.json
+# Project scope: shared via .mcp.json
 claude mcp add --transport http da-sc --scope project http://localhost:8787/mcp
 
-# User scope: available across your projects
+# User scope: available across all your projects
 claude mcp add --scope user --transport http da-sc https://da-sc-mcp.adobeaem.workers.dev/mcp
 ```
 
-Manage/check MCP servers:
+Manage and inspect MCP servers:
 
 ```bash
 claude mcp list
@@ -164,18 +169,18 @@ claude mcp get da-sc
 claude mcp remove da-sc
 ```
 
-Inside Claude Code:
+From inside Claude Code:
 
 ```text
 /mcp
 ```
 
-### 2) Install skills
+### 2. Install Skills
 
-Install from local checkout:
+Install from a local checkout:
 
 ```bash
-# Preview
+# Preview available skills
 npx skills add "/absolute/path/to/da-sc-mcp" --list
 
 # Install all skills for all supported agents
@@ -188,33 +193,23 @@ Install a single skill:
 npx skills add "/absolute/path/to/da-sc-mcp" --skill serialize-structured-content
 ```
 
-Verify:
+Verify installation:
 
 ```bash
 npx skills ls --agent claude-code
 ```
 
-Install directly from GitHub (after repo has content):
+Install directly from GitHub:
 
 ```bash
 npx skills add "adobe-rnd/da-sc-mcp" --all
 ```
 
-### What `npx skills add adobe/skills --all` means
+The `--all` flag installs every skill across every supported agent without interactive confirmation.
 
-- `skills add`: install skills from a source (GitHub repo or local path)
-- `adobe/skills`: GitHub source repository
-- `--all`: shorthand for all skills + all agents + non-interactive confirmation
+## Manual MCP Configuration (Optional)
 
-Equivalent pattern for this project:
-
-```bash
-npx skills add "adobe-rnd/da-sc-mcp" --all
-```
-
-## Optional manual Claude MCP configuration
-
-If you prefer manual config, set `da-sc` in `~/.claude.json` or project `.mcp.json`:
+To configure the server manually, add `da-sc` to `~/.claude.json` or your project's `.mcp.json`:
 
 ```json
 {
@@ -227,20 +222,20 @@ If you prefer manual config, set `da-sc` in `~/.claude.json` or project `.mcp.js
 }
 ```
 
-## adobeUsage examples
+## Usage Examples
 
-Examples you can ask Claude once configured:
+Once configured, you can ask Claude:
 
-- "Compile this schema and tell me all issue pointers"
-- "Validate this document data against the schema"
-- "Serialize this document JSON to DA HTML only"
-- "Generate schema + document for this source"
+- "Compile this schema and list all issue pointers."
+- "Validate this document data against the schema."
+- "Serialize this document JSON to DA HTML."
+- "Generate a schema and document from this source."
 
 ## API Endpoints
 
 ### `GET /health`
 
-Returns service status:
+Returns the service status:
 
 ```json
 {
@@ -248,29 +243,33 @@ Returns service status:
   "service": "da-sc-mcp",
   "version": "0.1.0",
   "environment": "dev",
-  "timestamp": "2026-05-20T12:00:00.000Z"
+  "timestamp": "<ISO-8601 timestamp>"
 }
 ```
 
 ### `POST /mcp`
 
-MCP protocol endpoint for tool execution.
+The MCP protocol endpoint for tool execution.
 
-### Other request behavior
+### Other Request Behavior
 
-- `OPTIONS /*` -> CORS preflight (`204`)
-- `GET /mcp` -> `405 Method Not Allowed`
+- `OPTIONS /*` → CORS preflight (`204`)
+- `GET /mcp` → `405 Method Not Allowed`
 
-## Authentication model
+## Authentication
 
-`da-sc-mcp` itself does not enforce auth.
-
-This is intentional for the structured-content-only workflow. If you need authenticated DA persistence operations, use the DA admin MCP flow alongside this server.
+`da-sc-mcp` does not enforce authentication. This is intentional: the server is scoped to stateless structured-content operations. For authenticated DA persistence, use the DA admin MCP server alongside this one.
 
 ## Logging and Monitoring
+
+Stream live worker logs:
 
 ```bash
 wrangler tail
 ```
 
-Use `/health` for uptime checks and Wrangler logs for runtime diagnostics.
+Use `/health` for uptime checks and `wrangler tail` for runtime diagnostics.
+
+## License
+
+Released under the Apache-2.0 license. See `package.json` for the SPDX identifier.

@@ -1,7 +1,18 @@
+/*
+ * Copyright 2025 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
 import {
   beforeEach, describe, expect, it, vi,
 } from 'vitest';
-import { convertJsonToHtml, validateData, validateSchema } from 'da-sc-sdk';
+import { convertJsonToHtml, validateData, validateSchema } from '@adobe/da-sc-sdk';
 import {
   handleCompileSchema,
   handleValidateDocument,
@@ -9,7 +20,7 @@ import {
   handleSerializeDocument,
 } from '../../src/mcp/handlers';
 
-vi.mock('da-sc-sdk', () => ({
+vi.mock('@adobe/da-sc-sdk', () => ({
   validateSchema: vi.fn(),
   validateData: vi.fn(),
   convertJsonToHtml: vi.fn(),
@@ -30,7 +41,9 @@ describe('sc handlers', () => {
 
       expect(validateSchema).toHaveBeenCalledWith({ schema: { type: 'object' } });
       expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toBe(JSON.stringify({ valid: true, schemaIssues: [] }, null, 2));
+      expect(result.content[0].text).toBe(
+        JSON.stringify({ valid: true, schemaIssues: [] }, null, 2),
+      );
     });
 
     it('returns error payload when schema JSON cannot be parsed', async () => {
@@ -141,5 +154,4 @@ describe('sc handlers', () => {
       expect(JSON.parse(result.content[0].text)).toEqual({ error: 'Invalid JSON payload.' });
     });
   });
-
 });

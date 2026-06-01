@@ -53,7 +53,10 @@ test/
 ├── mcp/handlers.integration.test.ts
 └── mcp/handlers.test.ts
 
-CLAUDE-QUICK-START.md
+docs/
+├── CLAUDE-QUICK-START.md
+└── release-flow.md
+
 README.md
 package.json
 wrangler.toml
@@ -95,7 +98,7 @@ npm install
 
 ## Quick Start for Claude
 
-For the simplest Claude MCP and skills setup, see [`CLAUDE-QUICK-START.md`](./CLAUDE-QUICK-START.md).
+For the simplest Claude MCP and skills setup, see [`docs/CLAUDE-QUICK-START.md`](./docs/CLAUDE-QUICK-START.md).
 
 ## Development
 

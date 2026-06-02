@@ -2,7 +2,7 @@
 name: author-structured-content
 description: Orchestrate end-to-end DA Structured Content creation from any source — URL, JSON, file, image/PDF, topic, or plain-language brief. Use whenever a user describes source material (a website, a JSON blob, a topic, a document) AND wants the result ending up in DA (mentions org/site, "import", "create as structured content", "save to DA") — even if they don't say "schema" or "structured content" explicitly. Skip when only HTML output is needed (use serialize-structured-content), only a schema (use generate-schema), only an import into an existing schema (use import-structured-content), or only validation (use validate-structured-content).
 license: Apache-2.0
-compatibility: Pure orchestrator — delegates all work to generate-schema, import-structured-content, serialize-structured-content, and compute-editor-urls. Requires those skills installed plus DA MCP and DA-SC MCP for the sub-skills. Uses general WebFetch/Read for source ingestion.
+compatibility: Pure orchestrator — delegates all work to generate-schema, import-structured-content, and (via import) serialize-structured-content. Editor URL templates have a canonical source in compute-editor-urls but are mirrored inline by the sub-skills (no runtime delegation). Requires those skills installed plus DA MCP and DA-SC MCP for the sub-skills. Uses general WebFetch/Read for source ingestion.
 metadata:
   version: "0.1.0"
 ---
@@ -41,9 +41,9 @@ These requirements override any general "don't stop and ask" preference. If sour
 Two channels, separate concerns:
 
 1. **Mode signal** via the Skill tool `args` string: `mode=delegated, caller=author-structured-content`.
-2. **Actual data** (payload, names, paths, user decisions) via the conversation context — state them clearly in your message immediately before invoking `Skill(...)`. The sub-skill's instructions get loaded into the same conversation, so it reads both its own instructions and your most recent message.
+2. **Actual data** (payload, names, paths, user decisions) — state these clearly in the message immediately before invoking `Skill(...)`. The sub-skill reads its inputs from that message.
 
-`args` is kept small because it's a single string and stuffing large JSON payloads into it is brittle. Conversation context is the natural channel for data.
+`args` is kept small because it's a single string and stuffing large JSON payloads into it is brittle. The invocation message is the channel for data.
 
 **`caller` field semantics:** the immediate calling skill's name, used for logging and traceability. It does not change sub-skill behavior. In nested chains (author → import → serialize), each invocation reports its own immediate caller — when import invokes serialize, `caller=import-structured-content`, not `caller=author-structured-content`.
 
@@ -68,9 +68,7 @@ When a sub-skill returns `status: "needs_user_decision"`:
 2. Present the relevant options to the user clearly.
 3. Wait for the user's reply.
 4. **If the user aborts** (says "abort", "cancel", "stop", etc.), do NOT re-invoke the sub-skill. Surface the abort as your final response (e.g., "Aborted at user request — no schema or document was created.") and stop. The orchestration ends here.
-5. **Otherwise:** in your next message, restate **both** the original source payload **and** the recorded decisions (e.g., "Resuming generate-schema with these reserved-key decisions: `$ref → ref`. Source payload: …"). Then re-invoke the same sub-skill with the same `args` (`mode=delegated, caller=author-structured-content`).
-
-The sub-skill scans its prior context, sees the recorded decisions, applies them, and proceeds. There is no separate "resume token" — the conversation context IS the state.
+5. **Otherwise:** in your next message, state both the original source payload and the user's decisions (e.g., "Source payload: … Reserved-key decisions: `$ref → ref`."), then invoke the same sub-skill again with the same `args` (`mode=delegated, caller=author-structured-content`). The sub-skill reads the decisions from the invocation message and proceeds.
 
 ## Orchestration Workflow
 
@@ -163,7 +161,7 @@ You own this. Sub-skills produced no user-facing output (they ran in delegated m
 - Schema design / validation / save / key policy → **generate-schema**.
 - Document payload shape → **serialize-structured-content** (driven through **import-structured-content**).
 - Document validation and DA write → **import-structured-content**.
-- Editor URL construction (document and schema) → **compute-editor-urls** (called by the relevant sub-skill — author never delegates directly).
+- Editor URL templates → canonical source in **compute-editor-urls**. At runtime, **generate-schema** and **import-structured-content** compute URLs inline using mirrored templates (no `Skill(...)` delegation hop), and this orchestrator reads the resulting URLs from their handoff payloads (`schemaEditorUrl`, `editorUrl`) — author never constructs URLs itself.
 
 This skill calls no `sc_*` or `da_*` tools directly. If a sub-skill is unavailable or returns `failed`, stop and surface the failure with the `error.code` and `error.message` from its handoff — silently routing around a missing sub-skill defeats the ownership model and produces inconsistent results.
 
@@ -187,4 +185,5 @@ This skill calls no `sc_*` or `da_*` tools directly. If a sub-skill is unavailab
 | Sub-skill returned `status: "failed"` with `error.code = "tool_unavailable"` | DA MCP or DA-SC MCP not installed | Surface the install command from `error.message` verbatim to the user (sub-skills include it). If the message lacks a command, the canonical ones are: DA-SC MCP — `claude mcp add da-sc --scope user --transport http https://da-sc-mcp.adobeaem.workers.dev/mcp`; DA MCP — `claude mcp add da --scope user --transport http https://mcp.adobeaemcloud.com/adobe/mcp/da`. Do not retry until the user confirms the MCP is installed. |
 | Sub-skill returned `status: "failed"` with another `error.code`           | Genuine downstream failure                                   | Surface to user with full error context; do not retry blindly                 |
 | Handoff payload missing the `status` field                                | Sub-skill is out of date                                     | Treat as `failed`; ask user to update the sub-skill                           |
-| Editor URL missing in final response                                      | Step 2 or Step 3 handoff payload was not captured            | Re-run the relevant sub-skill; never construct URLs manually — that's **compute-editor-urls**'s job |
+| Editor URL missing in final response                                      | Step 2 or Step 3 handoff payload was not captured            | Re-run the relevant sub-skill; never construct URLs manually — use the URL from the sub-skill's handoff, whose canonical template lives in **compute-editor-urls** |
+| Sub-skill's handoff JSON appears as the final user-visible text of the turn | Resumption protocol skipped after the sub-skill returned | After every `Skill(...)` invocation, the next assistant text must be the caller's next workflow step (Step 4 for this orchestrator — composing the user-facing summary). A raw handoff payload must never be the final turn output. Re-read the sub-skill's "After the handoff" rule and continue the parent's workflow in the same turn. |

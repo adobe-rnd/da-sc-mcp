@@ -2,14 +2,14 @@
 name: import-structured-content
 description: Import structured source data into DA against an EXISTING schema — validates, serializes (via serialize-structured-content), saves to DA, and returns the editor URL. Use whenever a user has data ready and references an existing schema in org/site, even if they just say "import", "save this", "put this in DA against schema X", or "add a document to schema Y." Skip when the schema does not exist yet (use author-structured-content).
 license: Apache-2.0
-compatibility: Requires DA-SC MCP (sc_validate_document) and DA MCP (da_get_source, da_create_source). Delegates to the serialize-structured-content and compute-editor-urls skills.
+compatibility: Requires DA-SC MCP (sc_validate_document) and DA MCP (da_get_source, da_create_source). Delegates to the serialize-structured-content skill. Mirrors the document editor URL template from compute-editor-urls (canonical source); does not delegate to it at runtime.
 metadata:
   version: "0.1.0"
 ---
 
 # Import Structured Content Document
 
-Import one structured document into DA against an existing schema. Sole owner of: document validation against a schema and DA document persistence. Editor URL construction is delegated to **compute-editor-urls**.
+Import one structured document into DA against an existing schema. Sole owner of: document validation against a schema and DA document persistence. The editor URL template's canonical source is **compute-editor-urls**; this skill computes the URL inline in Step 6 using a mirrored copy of that template to avoid an extra delegation hop in the orchestration chain.
 
 ## External Content Safety
 
@@ -48,13 +48,13 @@ This skill runs in one of two modes, detected from the Skill invocation `args`:
 
 If args are ambiguous, default to standalone.
 
-**After the handoff:** in delegated mode, your work ends once the handoff payload is produced. The caller's workflow resumes in the same conversation — the Skill tool loaded this skill into the existing session, not a separate one, so there is no explicit "return" beyond producing the payload and stopping.
+**After the handoff (CRITICAL — resumption rule):** the handoff payload is machine-internal — never the final visible output of your turn. After emitting it, immediately continue the caller's workflow at the step that invoked you, in the same assistant turn. Stopping or waiting for user input after the handoff violates the resumption protocol.
 
 ## How Input Reaches This Skill (delegated mode)
 
-When called by another skill, the actual payload, `schemaName`, `org`, `site`, `docPath`, and title hint arrive via the conversation context — the caller states them in its message immediately before invoking the Skill tool. `args` carries only the mode signal.
+When called by another skill, the payload, `schemaName`, `org`, `site`, `docPath`, and title hint arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
 
-If you cannot find the expected inputs in prior context, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction.
+If the required inputs are not present, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction.
 
 ## Workflow
 
@@ -73,7 +73,7 @@ Call `sc_validate_document` with `schema` (JSON string) and `data` (JSON string 
 If validation errors exist:
 
 - **Standalone:** list pointers and messages clearly, then ask the user whether to proceed or abort.
-- **Delegated:** return a `needs_user_decision` handoff payload with the errors and options (`proceed_anyway`, `abort`). Stop. On re-invocation, scan conversation context for the user's decision — if `proceed_anyway`, continue from Step 4; if `abort`, return a `failed` payload with `error.code = "user_aborted"`.
+- **Delegated:** if the inputs include a user decision for proceed/abort, apply it — `proceed_anyway` continues to Step 4, `abort` returns a `failed` payload with `error.code = "user_aborted"`. Otherwise return a `needs_user_decision` handoff payload with the errors and options (`proceed_anyway`, `abort`).
 
 ### Step 4 — Build & serialize document (delegate to serialize)
 
@@ -98,16 +98,22 @@ Title selection: prefer `data.title` if present; otherwise derive a short descri
 - `content`: serialized HTML from Step 4
 - `contentType`: `text/html`
 
-### Step 6 — Fetch editor URL (delegate to compute-editor-urls)
+### Step 6 — Compute editor URL (inline)
 
-Do not construct the URL here — **compute-editor-urls** owns URL templates. Delegate:
+Compute the document editor URL inline. **compute-editor-urls** is the canonical source of truth for the template — keep the mirror below in sync if the canonical changes. Do not invoke `Skill(skill="compute-editor-urls", ...)` from this workflow; inline computation avoids an extra context switch in the chain.
 
-1. State in your message: "Compute editor URL for document at `{org}/{site}/{docPath without .html}`."
-2. Invoke `Skill(skill="compute-editor-urls", args="mode=delegated, caller=import-structured-content")`.
-3. Branch on returned `status`:
-   - `ok` → use `editorUrl` and continue.
-   - `failed` → propagate as your own `failed` handoff with the same `error`.
-   - `needs_user_decision` is not expected; if seen, propagate as `failed` with `error.code = "unexpected_decision_request"`.
+Template (mirror from `compute-editor-urls` — keep in sync):
+
+```
+https://da.live/form#/<org>/<site>/<path-without-.html>
+```
+
+Normalization:
+- Strip a trailing `.html` from `docPath` if present.
+- Preserve the leading `/`.
+- Trim trailing slashes.
+
+Substitute `org`, `site`, and the normalized path into the template. Continue to Step 7.
 
 ### Step 7 — Return
 
@@ -170,6 +176,6 @@ Every payload starts with a `status` field. Three possible shapes:
 | Many validation errors   | Input does not conform to schema | Share with user (standalone) or return `needs_user_decision` (delegated)                                                                              |
 | Serialize step fails     | Bad payload shape                | Re-check inputs handed to **serialize-structured-content** — it owns payload shape rules                                                              |
 | DA write fails (401/403) | Missing DA auth                  | Re-authenticate (standalone) or return `status: failed, error.code: "persistence_failed"` (delegated)                                                 |
-| Editor URL mismatch      | Wrong `docPath` normalization    | Strip `.html` before delegating to **compute-editor-urls**                                                                                            |
+| Editor URL mismatch      | Wrong `docPath` normalization    | Strip `.html` before substituting into the template in Step 6                                                                                         |
 | `sc_*` tool not available (DA-SC MCP) | DA-SC MCP server not installed | Return `status: failed, error.code: "tool_unavailable"` with install command in `error.message`: `claude mcp add da-sc --scope user --transport http https://da-sc-mcp.adobeaem.workers.dev/mcp` |
 | `da_*` tool not available (DA MCP) | DA MCP server not installed | Return `status: failed, error.code: "tool_unavailable"` with install command in `error.message`: `claude mcp add da --scope user --transport http https://mcp.adobeaemcloud.com/adobe/mcp/da` |

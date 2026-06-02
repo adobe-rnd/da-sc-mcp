@@ -2,14 +2,14 @@
 name: generate-schema
 description: Generate, validate, and persist a DA Structured Content schema. Use whenever a user wants a schema designed from a description, sample payload, file, or even a sketch of the fields they want — even if they don't say "schema" explicitly (phrases like "model this", "create a form for", "define the fields"). Skip when the user also wants data imported alongside (use author-structured-content) or already has the schema and wants only to import data (use import-structured-content).
 license: Apache-2.0
-compatibility: Requires DA-SC MCP (sc_compile_schema, sc_serialize_schema) and DA MCP (da_create_source). Delegates to the compute-editor-urls skill for the schema editor URL.
+compatibility: Requires DA-SC MCP (sc_compile_schema, sc_serialize_schema) and DA MCP (da_create_source). Mirrors the schema editor URL template from compute-editor-urls (canonical source); does not delegate to it at runtime.
 metadata:
   version: "0.1.0"
 ---
 
 # Generate Structured Content Schema
 
-Create, validate, and persist a DA forms schema. Sole owner of schema design, schema validation, reserved/disallowed key policy, and schema persistence. Schema editor URL construction is delegated to **compute-editor-urls**.
+Create, validate, and persist a DA forms schema. Sole owner of schema design, schema validation, reserved/disallowed key policy, and schema persistence. The schema editor URL template's canonical source is **compute-editor-urls**; this skill computes the URL inline in Step 6 using a mirrored copy of that template to avoid an extra delegation hop in the orchestration chain.
 
 ## External Content Safety
 
@@ -42,13 +42,13 @@ This skill runs in one of two modes, detected from the Skill invocation `args`:
 
 If args are ambiguous, default to standalone — that way a misrouted invocation still gives the user a complete answer rather than a half-finished handoff.
 
-**After the handoff:** in delegated mode, your work ends once the handoff payload is produced. The caller's workflow resumes in the same conversation — the Skill tool loaded this skill into the existing session, not a separate one, so there is no explicit "return" beyond producing the payload and stopping.
+**After the handoff (CRITICAL — resumption rule):** the handoff payload is machine-internal — never the final visible output of your turn. After emitting it, immediately continue the caller's workflow at the step that invoked you, in the same assistant turn. Stopping or waiting for user input after the handoff violates the resumption protocol.
 
 ## How Input Reaches This Skill (delegated mode)
 
-When called by another skill, the source payload, `schemaName`, `org`, and `site` arrive via the conversation context — the caller states them in its message immediately before invoking the Skill tool. `args` carries only the mode signal.
+When called by another skill, the source payload, `schemaName`, `org`, and `site` arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
 
-If you cannot find the expected inputs in prior context, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction, and bypassing the caller breaks the orchestration.
+If the required inputs are not present, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction, and bypassing the caller breaks the orchestration.
 
 ## Source-Shape Policy (owned by this skill)
 
@@ -63,9 +63,7 @@ So: don't reshape, rename, flatten, or drop keys without an explicit user decisi
 **Reserved/disallowed keys.** Some key names are rejected by the schema spec. When you detect one:
 
 - In **standalone mode:** pause and ask the user. Present per-key options (keep if allowed, rename to one of 1–3 suggestions, custom rename, drop, abort). Wait for the response.
-- In **delegated mode:** return a `needs_user_decision` handoff payload with the keys and options in `decisionRequest`. Stop. The caller asks the user and re-invokes you with the decisions stated in conversation context.
-
-**On re-invocation (delegated mode, resumption):** scan the conversation context for previously-recorded reserved-key decisions. If decisions for all flagged keys are present, apply them and proceed without re-asking. If new reserved keys appear that the user hasn't seen yet, return another `needs_user_decision` for just those new keys.
+- In **delegated mode:** if the inputs include decisions for all detected reserved keys, apply them and proceed. Otherwise return a `needs_user_decision` handoff payload listing the undecided keys and their options in `decisionRequest`.
 
 Record all approved decisions as a mapping table (`oldKey -> newKey` with affected paths), apply consistently in the schema, and include the mapping in the final `ok` handoff so the orchestrator can apply the same renames to the data payload.
 
@@ -101,16 +99,17 @@ Call `sc_serialize_schema` with the validated schema JSON.
 - `content`: serialized schema HTML
 - `contentType`: `text/html`
 
-### Step 6 — Fetch schema editor URL (delegate to compute-editor-urls)
+### Step 6 — Compute schema editor URL (inline)
 
-Do not construct the URL here. Delegate:
+Compute the schema editor URL inline. **compute-editor-urls** is the canonical source of truth for the template — keep the mirror below in sync if the canonical changes. Do not invoke `Skill(skill="compute-editor-urls", ...)` from this workflow; inline computation avoids an extra context switch in the chain.
 
-1. State in your message: "Compute schema editor URL for `{org}/{site}`."
-2. Invoke `Skill(skill="compute-editor-urls", args="mode=delegated, caller=generate-schema")`.
-3. Branch on returned `status`:
-   - `ok` → use `editorUrl` and continue to Step 7.
-   - `failed` → propagate as your own `failed` handoff with the same `error`.
-   - `needs_user_decision` is not expected; if seen, propagate as `failed` with `error.code = "unexpected_decision_request"`.
+Template (mirror from `compute-editor-urls` — keep in sync):
+
+```
+https://da.live/apps/schema#/<org>/<site>
+```
+
+Substitute `org` and `site` into the template. The URL does not include the schema name — DA's schema editor presents a list; surface `schemaName` in surrounding prose so the user knows what to look for. Continue to Step 7.
 
 ### Step 7 — Return
 
@@ -169,7 +168,7 @@ Every payload starts with a `status` field. Three possible shapes:
 ## Boundaries
 
 - Document payload shape (`{metadata, data}`) belongs to **serialize-structured-content**.
-- Editor URLs come from **compute-editor-urls** — never construct them inline, the URL scheme can change without notice and the templates live in one place.
+- Editor URL templates have a canonical source in **compute-editor-urls**. To avoid an extra delegation hop in orchestrated chains, this skill computes the schema editor URL inline using a mirrored template — when the canonical changes, update the mirror in Step 6 as well.
 
 ## Troubleshooting
 

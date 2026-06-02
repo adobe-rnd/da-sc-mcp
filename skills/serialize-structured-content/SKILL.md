@@ -36,13 +36,13 @@ This skill runs in one of two modes, detected from the Skill invocation `args`:
 
 If args are ambiguous, default to standalone — that way a misrouted invocation still gives the user a complete answer rather than a half-finished handoff.
 
-**After the handoff:** in delegated mode, your work ends once the handoff payload is produced. The caller's workflow resumes in the same conversation — the Skill tool loaded this skill into the existing session, not a separate one, so there is no explicit "return" beyond producing the payload and stopping.
+**After the handoff (CRITICAL — resumption rule):** the handoff payload is machine-internal — never the final visible output of your turn. After emitting it, immediately continue the caller's workflow at the step that invoked you, in the same assistant turn. Stopping or waiting for user input after the handoff violates the resumption protocol.
 
 ## How Input Reaches This Skill (delegated mode)
 
-When called by another skill, the actual payload (file path, inline JSON, or reference) plus `schemaName` and title hint arrive via the conversation context — the caller states them in its message immediately before invoking the Skill tool. `args` carries only the mode signal.
+When called by another skill, the payload (file path, inline JSON, or reference) plus `schemaName` and title hint arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
 
-If you cannot find the expected inputs in prior context, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction.
+If the required inputs are not present, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction.
 
 ## Document Payload Shape
 

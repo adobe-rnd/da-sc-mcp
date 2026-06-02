@@ -8,7 +8,16 @@ metadata:
 
 # Compute Editor URLs
 
-Construct the DA editor URL for a structured content document or schema. This skill is the **sole owner** of editor URL templates — every other skill delegates to it rather than constructing URLs locally. That centralization is the whole point: if DA's URL scheme changes, only this file needs editing.
+Construct the DA editor URL for a structured content document or schema. This skill is the **canonical source of truth** for editor URL templates — when the DA scheme changes, update the table below first and propagate to any mirrored copies.
+
+## When to Delegate vs. Inline
+
+Two usage modes:
+
+- **Standalone invocation** — for direct user questions like *"what's the editor URL for X?"*. Invoke this skill via the Skill tool; it produces the user-facing response.
+- **Mirrored inline** — for orchestrated workflows. The calling skill embeds the URL template from the table below and computes the URL inline instead of invoking this skill via `Skill(...)`. Inline computation avoids an extra context switch and resumption point in the chain.
+
+Prefer inline for any non-terminal step in a chain of skills. When a calling skill mirrors a template, it must reference this skill by name in a comment so mirrors can be kept in sync when the canonical changes.
 
 ## Trigger / Skip
 
@@ -28,11 +37,11 @@ This skill runs in one of two modes, detected from the Skill invocation `args`:
 
 If args are ambiguous, default to standalone.
 
-**After the handoff:** in delegated mode, your work ends once the handoff payload is produced. The caller's workflow resumes in the same conversation.
+**After the handoff (CRITICAL — resumption rule):** the handoff payload is machine-internal — never the final visible output of your turn. After emitting it, immediately continue the caller's workflow at the step that invoked you, in the same assistant turn. Stopping or waiting for user input after the handoff violates the resumption protocol.
 
 ## How Input Reaches This Skill (delegated mode)
 
-When called by another skill, the inputs arrive via conversation context — the caller states them in its message immediately before invoking the Skill tool. `args` carries only the mode signal.
+When called by another skill, inputs arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
 
 Required inputs:
 

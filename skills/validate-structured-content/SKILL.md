@@ -32,13 +32,13 @@ If any MCP tool is missing, see Troubleshooting for the install command to surfa
 
 Primarily **standalone**. The orchestrator (**author-structured-content**) does not invoke this skill during normal flows because validation is folded into **generate-schema** (schema validation) and **import-structured-content** (data validation against schema). If a caller does invoke with `mode=delegated`, return the handoff payload below instead of a user-facing wrap-up.
 
-**After the handoff:** in delegated mode, your work ends once the handoff payload is produced. The caller's workflow resumes in the same conversation.
+**After the handoff (CRITICAL — resumption rule):** the handoff payload is machine-internal — never the final visible output of your turn. After emitting it, immediately continue the caller's workflow at the step that invoked you, in the same assistant turn. Stopping or waiting for user input after the handoff violates the resumption protocol.
 
 ## How Input Reaches This Skill (delegated mode)
 
-When called by another skill, the schema and/or data arrive via the conversation context — the caller states them in its message immediately before invoking the Skill tool. `args` carries only the mode signal.
+When called by another skill, the schema and/or data arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
 
-If you cannot find the expected inputs in prior context, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly.
+If the required inputs are not present, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly.
 
 ## Inputs
 

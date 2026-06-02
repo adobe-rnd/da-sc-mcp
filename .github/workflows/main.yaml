@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm ci
+      - run: npm install
       - run: npm run lint
       - run: npm run type-check
       - run: npm test
@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm ci
+      - run: npm install
       - name: Semantic Release (Dry Run)
         run: npm run semantic-release-dry
         env:
@@ -76,7 +76,7 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'npm'
-      - run: npm ci
+      - run: npm install
       - name: Semantic Release
         # semantic-release runs `publishCmd: npm run deploy:production` as part
         # of its release flow, so the Cloudflare secrets must reach this step.

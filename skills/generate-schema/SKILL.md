@@ -79,7 +79,7 @@ Record all approved decisions as a mapping table (`oldKey -> newKey` with affect
 
 ### Step 2 — Draft schema
 
-Draft schema JSON using the official schema spec only: [da-sc-sdk schema-spec.md](https://raw.githubusercontent.com/adobe-rnd/da-sc-sdk/refs/heads/main/docs/schema-spec.md). The spec is the single source of truth — don't add local rules here, because spec rules drift over time and any rule duplicated in this skill will eventually fall behind. Conformance is checked in Step 3.
+Draft schema JSON using the official schema spec only: [da-sc-sdk schema-spec.md](https://raw.githubusercontent.com/adobe/da-sc-sdk/refs/heads/main/docs/schema-spec.md). The spec is the single source of truth — don't add local rules here, because spec rules drift over time and any rule duplicated in this skill will eventually fall behind. Conformance is checked in Step 3.
 
 ### Step 3 — Validate
 
@@ -184,4 +184,4 @@ Every payload starts with a `status` field. Three possible shapes:
 
 ## Resources
 
-- [da-sc-sdk schema-spec.md](https://raw.githubusercontent.com/adobe-rnd/da-sc-sdk/refs/heads/main/docs/schema-spec.md)
+- [da-sc-sdk schema-spec.md](https://raw.githubusercontent.com/adobe/da-sc-sdk/refs/heads/main/docs/schema-spec.md)

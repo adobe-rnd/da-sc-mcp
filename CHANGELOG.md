@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.1.1...v0.1.2) (2026-07-29)
+
+
+### Bug Fixes
+
+* update @adobe/da-sc-sdk to 0.2.0 ([#4](https://github.com/adobe-rnd/da-sc-mcp/issues/4)) ([9b888ca](https://github.com/adobe-rnd/da-sc-mcp/commit/9b888cac2479f9338e6c9ec83d86d9eb400a0710))
+
 ## [0.1.1](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.1.0...v0.1.1) (2026-06-23)
 
 

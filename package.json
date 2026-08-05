@@ -1,6 +1,6 @@
 {
   "name": "da-sc-mcp",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Remote MCP server for DA Structured Content (@adobe/da-sc-sdk) on Cloudflare Workers",
   "main": "src/index.ts",
   "type": "module",

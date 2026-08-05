@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.1.2...v0.2.0) (2026-08-05)
+
+
+### Features
+
+* adopt @adobe/da-sc-sdk 0.3.0 (restructured schemaIssues) ([#5](https://github.com/adobe-rnd/da-sc-mcp/issues/5)) ([66a411a](https://github.com/adobe-rnd/da-sc-mcp/commit/66a411a36f3cd1fc0e4204580f662bef4fa5cd47))
+
 ## [0.1.2](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.1.1...v0.1.2) (2026-07-29)
 
 

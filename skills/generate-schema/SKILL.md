@@ -83,7 +83,7 @@ Draft schema JSON using the official schema spec only: [da-sc-sdk schema-spec.md
 
 ### Step 3 — Validate
 
-Run `sc_compile_schema`. If clean (`valid: true`, `schemaIssues: []`), continue. Otherwise fix by issue `reason` and re-run until clean.
+Run `sc_compile_schema`. If clean (`valid: true`, `schemaIssues: []`), continue. Otherwise fix each issue using its `reason`, `message`, and `schemaPath` (where in the schema to fix it), then re-run until clean.
 
 ### Step 4 — Serialize schema HTML
 

@@ -27,7 +27,7 @@ export function createServer(version: string): McpServer {
     'sc_compile_schema',
     {
       description:
-        'Compile and validate a JSON Schema against the DA form spec. Returns { valid, schemaIssues } — schemaIssues is an array of objects with pointer, reason, feature fields. valid is true iff schemaIssues is empty. reason codes: unsupported-composition, unsupported-type, type-as-array, missing-type, external-ref, unresolved-ref, invalid-pattern.',
+        'Compile and validate a JSON Schema against the DA form spec. Returns { valid, schemaIssues } — schemaIssues is an array of objects with reason, message, schemaPath, pointer, details fields (reason = machine code, message = human summary, schemaPath = where to fix it in the schema, pointer = data-instance location, details = reason-specific context). valid is true iff schemaIssues is empty. reason codes: unsupported-composition, unsupported-type, type-as-array, missing-type, external-ref, unresolved-ref, invalid-pattern.',
       inputSchema: z.object({
         schema: z.string().describe('JSON Schema as a JSON string'),
       }),

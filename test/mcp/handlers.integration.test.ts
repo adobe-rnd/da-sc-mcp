@@ -63,6 +63,13 @@ describe('sc handlers integration (real sdk)', () => {
     expect(payload.valid).toBe(false);
     expect(Array.isArray(payload.schemaIssues)).toBe(true);
     expect((payload.schemaIssues as unknown[]).length).toBeGreaterThan(0);
+
+    // da-sc-sdk 0.3 shape: { reason, message, schemaPath, pointer, details }
+    const [issue] = payload.schemaIssues as Array<Record<string, unknown>>;
+    expect(typeof issue.reason).toBe('string');
+    expect(typeof issue.message).toBe('string');
+    expect(typeof issue.schemaPath).toBe('string');
+    expect(typeof issue.pointer).toBe('string');
   });
 
   it('returns pointer-based errors from real data validation', async () => {

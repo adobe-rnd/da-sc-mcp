@@ -241,8 +241,8 @@ Returns the service status:
 {
   "status": "healthy",
   "service": "da-sc-mcp",
-  "version": "0.1.0",
-  "environment": "dev",
+  "version": "0.2.0",
+  "environment": "development",
   "timestamp": "<ISO-8601 timestamp>"
 }
 ```

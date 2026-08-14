@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.2.0...v0.2.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* correct /health example response in README ([#7](https://github.com/adobe-rnd/da-sc-mcp/issues/7)) ([a978c2a](https://github.com/adobe-rnd/da-sc-mcp/commit/a978c2adb158737e344e2dcbb87ab4fa3c517524)), closes [#6](https://github.com/adobe-rnd/da-sc-mcp/issues/6)
+
 # [0.2.0](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.1.2...v0.2.0) (2026-08-05)
 
 

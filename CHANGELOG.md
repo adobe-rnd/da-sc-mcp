@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.2.1...v0.3.0) (2026-09-04)
+
+
+### Features
+
+* adopt @adobe/da-sc-sdk 0.5.0 ([#8](https://github.com/adobe-rnd/da-sc-mcp/issues/8)) ([b8fa0cd](https://github.com/adobe-rnd/da-sc-mcp/commit/b8fa0cdcd3724984a318606717a2a98ee5630a92))
+
 ## [0.2.1](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.2.0...v0.2.1) (2026-08-14)
 
 

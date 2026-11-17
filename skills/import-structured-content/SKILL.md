@@ -79,7 +79,10 @@ If validation errors exist:
 
 Do not build the payload here — **serialize-structured-content** owns the payload shape. Delegate:
 
-1. State in your message: "Building payload for `{schemaName}` with title `<derived-or-source-title>`. Data: `<inline JSON or reference>`."
+1. State in your message that you are building the payload for `{schemaName}`, with:
+   - Title: `<document-title>`
+   - Data: `<document-data>`
+   - Schema: `<document-schema>`
 2. Invoke `Skill(skill="serialize-structured-content", args="mode=delegated, caller=import-structured-content")`. Note `caller` is **this** skill, not the top-level orchestrator — `caller` always reports the immediate caller.
 3. Branch on serialize's returned `status`:
    - `ok` → use `html` from the payload and continue.

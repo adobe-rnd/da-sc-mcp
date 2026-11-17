@@ -70,13 +70,17 @@ export function createServer(version: string): McpServer {
     'sc_serialize_document',
     {
       description:
-        'Convert a form document { metadata, data } to DA EDS HTML using the same serialiser the form block uses on save. metadata MUST include schemaName AND title — the call will be rejected with an error if either is absent or empty. Returns the HTML string to pass to da_create_source.',
+        'Convert a form document { metadata, data } to DA EDS HTML using the same serialiser the form block uses on save. metadata MUST include schemaName AND title. The call is rejected with an error if either is absent or empty. Optionally pass the document schema as schema, so each value is serialized according to its schema definition. Returns the HTML string to pass to da_create_source.',
       inputSchema: z.object({
         document: z
           .string()
           .describe(
             'Form document as a JSON string: { "metadata": { "schemaName": "...", "title": "..." }, "data": { ... } }',
           ),
+        schema: z
+          .string()
+          .optional()
+          .describe('JSON Schema of the document as a JSON string'),
       }),
     },
     (args) => handleSerializeDocument(args) as Promise<CallToolResult>,

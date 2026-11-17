@@ -64,12 +64,12 @@ wrangler.toml
 
 ## Available MCP Tools
 
-| Tool                    | Description                                                                 |
-| ----------------------- | --------------------------------------------------------------------------- |
-| `sc_compile_schema`     | Compile schema against DA form constraints and return `editable` + `issues` |
-| `sc_validate_document`  | Validate document `data` against schema and return pointer-based errors     |
-| `sc_serialize_schema`   | Convert schema JSON into DA schema-editor HTML shell                        |
-| `sc_serialize_document` | Convert `{ metadata, data }` document JSON into DA EDS HTML                 |
+| Tool                    | Description                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `sc_compile_schema`     | Compile schema against DA form constraints and return `editable` + `issues`               |
+| `sc_validate_document`  | Validate document `data` against schema and return pointer-based errors                   |
+| `sc_serialize_schema`   | Convert schema JSON into DA schema-editor HTML shell                                      |
+| `sc_serialize_document` | Convert `{ metadata, data }` document JSON into DA EDS HTML, optionally with its `schema` |
 
 ## Included Skills
 

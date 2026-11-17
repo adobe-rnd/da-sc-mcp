@@ -178,4 +178,45 @@ describe('sc handlers integration (real sdk)', () => {
     expect(result.content[0].text).toContain('Ada Lovelace');
     expect(result.content[0].text).toContain('London');
   });
+
+  describe('document schema', () => {
+    // rich-text makes the model's effect visible as a self:// reference in the HTML.
+    const schema = {
+      type: 'object',
+      properties: { body: { type: 'string', 'x-semantic-type': 'rich-text' } },
+    };
+    const document = (body: unknown) => JSON.stringify({
+      metadata: { schemaName: 'article', title: 'Article' },
+      data: { body },
+    });
+
+    it('serializes a rich-text value with the model built from the schema', async () => {
+      const result = await handleSerializeDocument({
+        document: document('<p>Hi</p>'),
+        schema: JSON.stringify(schema),
+      });
+
+      expect(result.isError).toBeUndefined();
+      const html = result.content[0].text;
+      expect(html).toContain('<p>self://rich-text#body-1</p>');
+      expect(html).toContain('<div class="body body-1"><div><div><p>Hi</p></div></div></div>');
+    });
+
+    it('serializes without a model when no schema is given', async () => {
+      const result = await handleSerializeDocument({ document: document('<p>Hi</p>') });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content[0].text).not.toContain('self://');
+    });
+
+    it('returns the SDK error when the data does not fit the schema', async () => {
+      const result = await handleSerializeDocument({
+        document: document(42),
+        schema: JSON.stringify(schema),
+      });
+
+      expect(result.isError).toBe(true);
+      expect(parseJsonContent(result.content[0].text).error).toBeTypeOf('string');
+    });
+  });
 });

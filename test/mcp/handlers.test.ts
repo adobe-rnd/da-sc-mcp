@@ -12,7 +12,10 @@
 import {
   beforeEach, describe, expect, it, vi,
 } from 'vitest';
-import { convertJsonToHtml, validateData, validateSchema } from '@adobe/da-sc-sdk';
+import {
+  convertJsonToHtml, createEngine, validateData, validateSchema,
+} from '@adobe/da-sc-sdk';
+import type { Engine, Model } from '@adobe/da-sc-sdk';
 import {
   handleCompileSchema,
   handleValidateDocument,
@@ -24,7 +27,16 @@ vi.mock('@adobe/da-sc-sdk', () => ({
   validateSchema: vi.fn(),
   validateData: vi.fn(),
   convertJsonToHtml: vi.fn(),
+  createEngine: vi.fn(),
 }));
+
+function mockEngineModel(model: Model) {
+  vi.mocked(createEngine).mockReturnValue({
+    getState: () => ({
+      document: null, model, validation: { errors: {} }, schemaIssues: [],
+    }),
+  } as unknown as Engine);
+}
 
 const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
 
@@ -139,6 +151,25 @@ describe('sc handlers', () => {
       const result = await handleSerializeDocument({ document: JSON.stringify(doc) });
 
       expect(convertJsonToHtml).toHaveBeenCalledWith({ json: doc });
+      expect(createEngine).not.toHaveBeenCalled();
+      expect(result.isError).toBeUndefined();
+      expect(result.content[0].text).toBe('<body>ok</body>');
+    });
+
+    it('passes the model built from the schema to convertJsonToHtml', async () => {
+      const doc = { metadata: { schemaName: 'my-schema', title: 'Hello' }, data: { name: 'x' } };
+      const schema = { type: 'object', properties: { name: { type: 'string' } } };
+      const model = { root: {}, byPointer: {}, document: doc } as unknown as Model;
+      mockEngineModel(model);
+      vi.mocked(convertJsonToHtml).mockReturnValue({ html: '<body>ok</body>' });
+
+      const result = await handleSerializeDocument({
+        document: JSON.stringify(doc),
+        schema: JSON.stringify(schema),
+      });
+
+      expect(createEngine).toHaveBeenCalledWith({ schema, document: doc });
+      expect(convertJsonToHtml).toHaveBeenCalledWith({ json: doc, model });
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toBe('<body>ok</body>');
     });

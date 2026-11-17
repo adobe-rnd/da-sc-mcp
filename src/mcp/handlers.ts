@@ -10,7 +10,9 @@
  * governing permissions and limitations under the License.
  */
 
-import { convertJsonToHtml, validateData, validateSchema } from '@adobe/da-sc-sdk';
+import {
+  convertJsonToHtml, createEngine, validateData, validateSchema,
+} from '@adobe/da-sc-sdk';
 import type { Document, ValidationError } from '@adobe/da-sc-sdk';
 
 // Matches schema-editor/utils/utils.js HTML_SHELL exactly.
@@ -60,12 +62,9 @@ export async function handleSerializeSchema(args: { schema: string }) {
   }
 }
 
-export async function handleSerializeDocument(args: { document: string }) {
+export async function handleSerializeDocument(args: { document: string; schema?: string }) {
   try {
-    const doc = JSON.parse(args.document) as {
-      metadata?: { schemaName?: string; title?: string };
-      data?: unknown;
-    };
+    const doc = JSON.parse(args.document) as Document;
 
     if (!doc.metadata?.schemaName) {
       return {
@@ -86,7 +85,10 @@ export async function handleSerializeDocument(args: { document: string }) {
       };
     }
 
-    const serialized = convertJsonToHtml({ json: doc as Document });
+    const model = args.schema !== undefined
+      ? createEngine({ schema: JSON.parse(args.schema), document: doc }).getState().model
+      : undefined;
+    const serialized = convertJsonToHtml({ json: doc, model });
     if ('error' in serialized) {
       throw new Error(serialized.error);
     }

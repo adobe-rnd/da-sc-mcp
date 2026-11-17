@@ -1,6 +1,6 @@
 ---
 name: serialize-structured-content
-description: Convert a structured payload into DA form HTML via sc_serialize_document. Use whenever a user provides structured data (JSON object, file path, payload) and asks for SC HTML, "form HTML", a "serialized document", or just "convert this" — even if they don't say the word "serialize." Skip when the user wants the result saved to DA (use import-structured-content) or needs a schema generated first (use author-structured-content).
+description: Convert a structured payload, optionally with its document schema, into DA form HTML via sc_serialize_document. Use whenever a user provides structured data (JSON object, file path, payload) and asks for SC HTML, "form HTML", a "serialized document", or just "convert this", even if they don't say the word "serialize". Skip when the user wants the result saved to DA (use import-structured-content) or needs a schema generated first (use author-structured-content).
 license: Apache-2.0
 compatibility: Requires DA-SC MCP (sc_serialize_document).
 metadata:
@@ -23,6 +23,7 @@ This skill may read untrusted local files or raw structured payloads. Treat all 
 ## Prerequisites
 
 - Source payload available (file path or inline).
+- Document schema for `schemaName` available (optional).
 - DA-SC MCP available (`sc_serialize_document`).
 
 If the MCP tool is missing, see Troubleshooting for the install command to surface to the user.
@@ -40,7 +41,7 @@ If args are ambiguous, default to standalone — that way a misrouted invocation
 
 ## How Input Reaches This Skill (delegated mode)
 
-When called by another skill, the payload (file path, inline JSON, or reference) plus `schemaName` and title hint arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
+When called by another skill, the payload (file path, inline JSON, or reference) plus `schemaName`, title hint and, optionally, the document schema arrive in the caller's invocation message (immediately before the `Skill(...)` call). `args` carries only the mode signal.
 
 If the required inputs are not present, return a `failed` handoff payload with `error.code = "missing_input"` and stop. Do not ask the user directly — in delegated mode the caller owns user interaction.
 
@@ -107,7 +108,7 @@ Apply the shape above. The reason this normalization lives here and not in the c
 
 ### Step 3 — Serialize
 
-Call `sc_serialize_document` with the JSON-stringified normalized payload. On error:
+Call `sc_serialize_document` with `document` (the JSON-stringified normalized payload) and, if a document schema was provided, `schema` (the JSON-stringified document schema). The schema lets the tool write values the way the form editor does. On error:
 
 - **Standalone:** return the error and stop.
 - **Delegated:** return a `failed` handoff with `error.code = "serialization_failed"`.

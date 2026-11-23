@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.4.0...v0.5.0) (2026-11-23)
+
+
+### Features
+
+* **mcp:** accept an optional schema in sc_serialize_document ([#10](https://github.com/adobe-rnd/da-sc-mcp/issues/10)) ([65eb440](https://github.com/adobe-rnd/da-sc-mcp/commit/65eb440adab92da740b3d5720851f303058b88f0))
+
 # [0.4.0](https://github.com/adobe-rnd/da-sc-mcp/compare/v0.3.0...v0.4.0) (2026-11-23)
 
 

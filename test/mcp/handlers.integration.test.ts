@@ -11,9 +11,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { convertJsonToHtml, createEngine } from '@adobe/da-sc-sdk';
+import type { Document, Model } from '@adobe/da-sc-sdk';
 import {
   handleCompileSchema,
   handleValidateDocument,
+  handleValidateHtml,
   handleSerializeDocument,
 } from '../../src/mcp/handlers';
 
@@ -218,5 +221,112 @@ describe('sc handlers integration (real sdk)', () => {
       expect(result.isError).toBe(true);
       expect(parseJsonContent(result.content[0].text).error).toBeTypeOf('string');
     });
+  });
+});
+
+describe('sc_validate_html (real sdk)', () => {
+  const schema = {
+    type: 'object',
+    title: 'Store',
+    properties: {
+      zip: { type: 'string', title: 'ZIP code' },
+      stock: { type: 'number', title: 'Stock' },
+      body: { type: 'string', title: 'Body', 'x-semantic-type': 'rich-text' },
+      cards: {
+        type: 'array',
+        title: 'Cards',
+        items: {
+          type: 'object',
+          title: 'Card',
+          properties: { name: { type: 'string', title: 'Name', minLength: 3 } },
+        },
+      },
+    },
+  };
+
+  // Builds the HTML the way DA stores it; the editor passes its model on save.
+  const storedHtml = (data: unknown, model?: Model | null) => {
+    const json: Document = { metadata: { schemaName: 'store', title: 'Store' }, data };
+    const serialized = convertJsonToHtml({ json, model });
+    if ('error' in serialized) {
+      throw new Error(serialized.error);
+    }
+    return serialized.html;
+  };
+
+  const validate = async (html: string, schemaText = JSON.stringify(schema)) => {
+    const result = await handleValidateHtml({ schema: schemaText, html });
+    return { isError: result.isError, payload: parseJsonContent(result.content[0].text) };
+  };
+
+  it('accepts a ZIP code in a text field', async () => {
+    const { isError, payload } = await validate(storedHtml({ zip: '12345' }));
+
+    expect(isError).toBeUndefined();
+    expect(payload).toEqual({ valid: true, errors: [], schemaIssues: [] });
+  });
+
+  it('rejects text in a number field', async () => {
+    const { payload } = await validate(storedHtml({ stock: 'many' }));
+
+    expect(payload.valid).toBe(false);
+    expect(payload.errors).toEqual([
+      { pointer: '/data/stock', label: 'Stock', message: 'Must be a number.' },
+    ]);
+  });
+
+  it('accepts a rich-text field stored as the editor saves it', async () => {
+    const document = { metadata: { schemaName: 'store' }, data: { body: '<p>Hi <strong>there</strong></p>' } };
+    const { model } = createEngine({ schema, document }).getState();
+    const html = storedHtml(document.data, model);
+
+    const { payload } = await validate(html);
+
+    expect(html).toContain('self://rich-text#');
+    expect(payload).toEqual({ valid: true, errors: [], schemaIssues: [] });
+  });
+
+  it('labels errors in a nested array with the field trail', async () => {
+    const { payload } = await validate(storedHtml({ cards: [{ name: 'Alice' }, { name: 'Bo' }] }));
+
+    expect(payload.errors).toEqual([{
+      pointer: '/data/cards/1/name',
+      label: 'Cards › Card 2 › Name',
+      message: 'Must be at least 3 characters.',
+    }]);
+  });
+
+  it('returns unsupported schema parts as labelled schema issues', async () => {
+    const withOneOf = {
+      ...schema,
+      properties: {
+        ...schema.properties,
+        price: { title: 'Price', oneOf: [{ type: 'string' }, { type: 'number' }] },
+      },
+    };
+
+    const { payload } = await validate(storedHtml({ zip: '12345' }), JSON.stringify(withOneOf));
+
+    expect(payload.valid).toBe(false);
+    expect(payload.errors).toEqual([]);
+    expect(payload.schemaIssues).toEqual([expect.objectContaining({
+      reason: 'unsupported-composition',
+      pointer: '/data/price',
+      label: 'Price',
+    })]);
+  });
+
+  it('fails on invalid schema JSON', async () => {
+    const { isError, payload } = await validate(storedHtml({ zip: '12345' }), '{bad');
+
+    expect(isError).toBe(true);
+    expect(payload.error).toBeTypeOf('string');
+  });
+
+  it('fails on HTML without a form block', async () => {
+    const { isError, payload } = await validate('<body><main><div><p>Hello</p></div></main></body>');
+
+    expect(isError).toBe(true);
+    expect(payload.error).toContain('not a structured content document');
   });
 });

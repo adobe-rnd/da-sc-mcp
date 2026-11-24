@@ -13,12 +13,15 @@ import {
   beforeEach, describe, expect, it, vi,
 } from 'vitest';
 import {
-  convertJsonToHtml, createEngine, validateData, validateSchema,
+  convertHtmlToJson, convertJsonToHtml, createEngine, validateData, validateSchema,
 } from '@adobe/da-sc-sdk';
-import type { Engine, Model } from '@adobe/da-sc-sdk';
+import type {
+  EditorState, Engine, Model, ModelNode,
+} from '@adobe/da-sc-sdk';
 import {
   handleCompileSchema,
   handleValidateDocument,
+  handleValidateHtml,
   handleSerializeSchema,
   handleSerializeDocument,
 } from '../../src/mcp/handlers';
@@ -27,15 +30,20 @@ vi.mock('@adobe/da-sc-sdk', () => ({
   validateSchema: vi.fn(),
   validateData: vi.fn(),
   convertJsonToHtml: vi.fn(),
+  convertHtmlToJson: vi.fn(),
   createEngine: vi.fn(),
 }));
 
-function mockEngineModel(model: Model) {
+function mockEngineState(state: Partial<EditorState>) {
   vi.mocked(createEngine).mockReturnValue({
     getState: () => ({
-      document: null, model, validation: { errors: {} }, schemaIssues: [],
+      document: null, model: null, validation: { errors: {} }, schemaIssues: [], ...state,
     }),
   } as unknown as Engine);
+}
+
+function mockEngineModel(model: Model) {
+  mockEngineState({ model });
 }
 
 const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
@@ -103,6 +111,105 @@ describe('sc handlers', () => {
 
       const payload = JSON.parse(result.content[0].text);
       expect(payload.error).toBeDefined();
+    });
+  });
+
+  describe('handleValidateHtml', () => {
+    const json = { metadata: { schemaName: 'article' }, data: {} };
+    const node = (pointer: string, label: string, extra: Partial<ModelNode> = {}) => (
+      { pointer, label, ...extra } as ModelNode
+    );
+    const model = {
+      root: node('/data', 'Article', {
+        children: [
+          node('/data/title', 'Title'),
+          node('/data/cards', 'Cards', {
+            items: [node('/data/cards/0', 'Card', { children: [node('/data/cards/0/name', 'Name')] })],
+          }),
+        ],
+      }),
+    } as Model;
+    const validate = () => handleValidateHtml({ schema: '{"type":"object"}', html: '<body></body>' });
+    const error = (message: string) => ({
+      keyword: 'type', instancePath: '', params: {}, message,
+    });
+
+    it('labels errors and schema issues and lists errors in document order', async () => {
+      vi.mocked(convertHtmlToJson).mockReturnValue({ json });
+      const issue = {
+        reason: 'unsupported-composition' as const,
+        message: 'Composition "oneOf" is not supported.',
+        schemaPath: '/properties/title',
+        pointer: '/data/title',
+        details: null,
+      };
+      mockEngineState({
+        model,
+        validation: {
+          errors: {
+            '/data/cards/0/name': error('Must be a string.'),
+            '/data/extra': error('Must not be present.'),
+            '/data/title': error('This field is required.'),
+          },
+        },
+        schemaIssues: [issue],
+      });
+
+      const result = await validate();
+
+      expect(convertHtmlToJson).toHaveBeenCalledWith({ html: '<body></body>' });
+      expect(createEngine).toHaveBeenCalledWith({ schema: { type: 'object' }, document: json });
+      expect(result.isError).toBeUndefined();
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        valid: false,
+        errors: [
+          { pointer: '/data/title', label: 'Title', message: 'This field is required.' },
+          { pointer: '/data/cards/0/name', label: 'Cards › Card 1 › Name', message: 'Must be a string.' },
+          { pointer: '/data/extra', label: '/data/extra', message: 'Must not be present.' },
+        ],
+        schemaIssues: [{ ...issue, label: 'Title' }],
+      });
+    });
+
+    it('is valid without errors and schema issues', async () => {
+      vi.mocked(convertHtmlToJson).mockReturnValue({ json });
+      mockEngineState({ model });
+
+      const result = await validate();
+
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        valid: true, errors: [], schemaIssues: [],
+      });
+    });
+
+    it('fails when the HTML cannot be converted', async () => {
+      vi.mocked(convertHtmlToJson).mockReturnValue({ error: 'html must be a non-empty string.' });
+
+      const result = await validate();
+
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({ error: 'html must be a non-empty string.' });
+      expect(createEngine).not.toHaveBeenCalled();
+    });
+
+    it('fails when the HTML has no schema name', async () => {
+      vi.mocked(convertHtmlToJson).mockReturnValue({ json: { metadata: {}, data: {} } as never });
+
+      const result = await validate();
+
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text).error).toContain('not a structured content document');
+      expect(createEngine).not.toHaveBeenCalled();
+    });
+
+    it('fails when the engine builds no model from the schema', async () => {
+      vi.mocked(convertHtmlToJson).mockReturnValue({ json });
+      mockEngineState({ model: null });
+
+      const result = await validate();
+
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({ error: 'The schema must be a JSON object.' });
     });
   });
 

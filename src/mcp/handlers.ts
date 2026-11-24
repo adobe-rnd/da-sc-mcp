@@ -11,9 +11,11 @@
  */
 
 import {
-  convertJsonToHtml, createEngine, validateData, validateSchema,
+  convertHtmlToJson, convertJsonToHtml, createEngine, validateData, validateSchema,
 } from '@adobe/da-sc-sdk';
-import type { Document, ValidationError } from '@adobe/da-sc-sdk';
+import type {
+  Document, JsonPointer, ModelNode, ValidationError,
+} from '@adobe/da-sc-sdk';
 
 // Matches schema-editor/utils/utils.js HTML_SHELL exactly.
 const SCHEMA_HTML_SHELL = '<body><header></header><main><div><pre><code>{{JSON}}</code></pre></div></main><footer></footer></body>';
@@ -22,10 +24,30 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+function failure(message: string) {
+  return {
+    isError: true,
+    content: [{ type: 'text' as const, text: JSON.stringify({ error: message }) }],
+  };
+}
+
 function mapValidationErrors(errors: Record<string, ValidationError>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(errors).map(([pointer, error]) => [pointer, error.message]),
   );
+}
+
+// Maps each pointer of the model to the labels that lead to it, such as
+// `Cards › Card 2 › Name`, in document order.
+function labelTrails(root: ModelNode): Map<JsonPointer, string> {
+  const trails = new Map<JsonPointer, string>();
+  const visit = (node: ModelNode, trail: string[]) => {
+    trails.set(node.pointer, trail.join(' › ') || node.label);
+    node.children?.forEach((child) => visit(child, [...trail, child.label]));
+    node.items?.forEach((item, index) => visit(item, [...trail, `${item.label} ${index + 1}`]));
+  };
+  visit(root, []);
+  return trails;
 }
 
 export async function handleCompileSchema(args: { schema: string }) {
@@ -49,6 +71,53 @@ export async function handleValidateDocument(args: { schema: string; data: strin
     return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   } catch (err) {
     return { content: [{ type: 'text' as const, text: JSON.stringify({ error: errorMessage(err) }) }] };
+  }
+}
+
+/**
+ * Validates a stored DA document against its schema the way the form editor does: the
+ * engine converts each value of the HTML to its schema type before it validates.
+ * Errors and schema issues carry the label trail of their field, in document order.
+ */
+export async function handleValidateHtml(args: { schema: string; html: string }) {
+  try {
+    const schema = JSON.parse(args.schema);
+    const converted = convertHtmlToJson({ html: args.html });
+    if ('error' in converted) {
+      return failure(converted.error);
+    }
+    if (!converted.json.metadata?.schemaName) {
+      return failure('The HTML is not a structured content document: it has no da-form block with a schema name.');
+    }
+
+    const { model, validation, schemaIssues } = createEngine({
+      schema,
+      document: converted.json,
+    }).getState();
+    if (!model) {
+      return failure('The schema must be a JSON object.');
+    }
+
+    const trails = labelTrails(model.root);
+    const labelOf = (pointer: JsonPointer) => trails.get(pointer) ?? pointer;
+    const pointers = new Set([...trails.keys(), ...Object.keys(validation.errors)]);
+    const errors = [...pointers]
+      .filter((pointer) => validation.errors[pointer])
+      .map((pointer) => ({
+        pointer,
+        label: labelOf(pointer),
+        message: validation.errors[pointer].message,
+      }));
+    const issues = schemaIssues.map((issue) => ({ ...issue, label: labelOf(issue.pointer) }));
+
+    const result = {
+      valid: errors.length === 0 && issues.length === 0,
+      errors,
+      schemaIssues: issues,
+    };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+  } catch (err) {
+    return failure(errorMessage(err));
   }
 }
 

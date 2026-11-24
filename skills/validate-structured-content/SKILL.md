@@ -1,10 +1,10 @@
 ---
 name: validate-structured-content
-description: Validate a DA Structured Content schema, a data document against a schema, or both — reporting issues and pointers, with no creation, serialization, or DA persistence. Use whenever a user asks to check, verify, validate, lint, or "see if this is OK" — even casual phrasing — for an SC schema or data. Skip when the user wants to create, import, save, or convert anything (those are different skills).
+description: Validate a DA Structured Content schema, a data document (JSON or stored DA HTML) against a schema, or both — reporting issues and pointers, with no creation, serialization, or DA persistence. Use whenever a user asks to check, verify, validate, lint, or "see if this is OK" — even casual phrasing — for an SC schema or data. Skip when the user wants to create, import, save, or convert anything (those are different skills).
 license: Apache-2.0
-compatibility: Requires DA-SC MCP (sc_compile_schema, sc_validate_document). DA MCP (da_get_source) optional — only needed when loading a schema from a DA path.
+compatibility: Requires DA-SC MCP (sc_compile_schema, sc_validate_document, sc_validate_html). DA MCP (da_get_source) optional — only needed when loading a schema or document from a DA path.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Validate Structured Content
@@ -23,8 +23,8 @@ This skill may read untrusted local files or raw structured payloads. Treat all 
 ## Prerequisites
 
 - Schema and/or data input available.
-- DA-SC MCP available (`sc_compile_schema`, `sc_validate_document`).
-- DA MCP available (`da_get_source`) — only required if loading the schema from a DA path.
+- DA-SC MCP available (`sc_compile_schema`, `sc_validate_document`, `sc_validate_html`).
+- DA MCP available (`da_get_source`) — only required if loading the schema or the document from a DA path.
 
 If any MCP tool is missing, see Troubleshooting for the install command to surface to the user.
 
@@ -46,6 +46,7 @@ Accept one or both of:
 
 - **Schema:** JSON, JSON string, file path, or DA path (`/.da/forms/schemas/{schemaName}.html`).
 - **Data:** JSON, JSON string, or file path. May be raw data or a full document payload `{metadata, data}` — if wrapped, validate the `data` portion against the schema (the `metadata` shape is a payload concern owned by **serialize-structured-content**, not this skill's responsibility).
+- **Stored document:** the DA HTML of a structured content document, as a string, file path, or DA document path (e.g. `/products/widget.html`).
 
 If both are present, validate the schema first, then validate the data against it (a broken schema makes data errors uninterpretable).
 
@@ -55,6 +56,7 @@ If both are present, validate the schema first, then validate the data against i
 
 - Determine which of schema / data / both is being validated.
 - If schema is given as a DA path, load it via `da_get_source` and extract the schema JSON from the HTML payload (read-only).
+- If the document is given as a DA path, load its HTML via `da_get_source` (read-only). Keep stored HTML as HTML; don't convert it to JSON yourself.
 - If data is wrapped, unwrap to the `data` portion for validation.
 
 ### Step 2 — Validate schema (if provided)
@@ -66,14 +68,15 @@ Call `sc_compile_schema` with the schema JSON.
 
 ### Step 3 — Validate data (if provided and schema present)
 
-Call `sc_validate_document` with `schema` and `data` as JSON strings. Collect errors with pointers and messages.
+- **Stored HTML:** call `sc_validate_html` with `schema` as a JSON string and `html`. It reads each value as the form editor does (e.g. a ZIP code `"12345"` in a text field stays text) and returns `{ valid, errors, schemaIssues }`. Each error has a `pointer`, a field `label` such as `Cards › Card 2 › Name`, and a `message`, in document order. A result with `isError: true` means the HTML or schema could not be read; report its `error`.
+- **JSON data:** call `sc_validate_document` with `schema` and `data` as JSON strings. Collect errors with pointers and messages.
 
 ### Step 4 — Report
 
 Return a clear validation report:
 
 - Schema validation status (`ok` or list of issues with pointer + reason).
-- Data validation status (`ok` or list of issues with pointer + message).
+- Data validation status (`ok` or list of issues with pointer + message, and the field label when `sc_validate_html` gives one).
 - A short verdict line: e.g., "Schema OK. Data has 2 errors at `/items/0/price` and `/items/1/sku`."
 
 Suggest what the user could change; don't mutate the source. The reason: validation reports are often shared with humans who need to make the call — a "validator" that silently rewrites the input destroys that audit trail.
@@ -90,7 +93,7 @@ Every payload starts with a `status` field. Two shapes (this skill does not paus
   "schemaResult": { "ok": true, "issues": [] },
   "dataResult": {
     "ok": false,
-    "errors": [{ "pointer": "...", "message": "..." }]
+    "errors": [{ "pointer": "...", "label": "...", "message": "..." }]
   },
   "notes": "<one-line verdict>"
 }

@@ -16,6 +16,7 @@ import { z } from 'zod';
 import {
   handleCompileSchema,
   handleValidateDocument,
+  handleValidateHtml,
   handleSerializeSchema,
   handleSerializeDocument,
 } from './handlers';
@@ -50,6 +51,19 @@ export function createServer(version: string): McpServer {
       }),
     },
     (args) => handleValidateDocument(args) as Promise<CallToolResult>,
+  );
+
+  server.registerTool(
+    'sc_validate_html',
+    {
+      description:
+        'Validate a stored DA structured content document (its HTML) against its schema, the way the form editor does: each value is converted to its schema type before validation, so a ZIP code such as "12345" in a text field is valid. Returns { valid, errors, schemaIssues }. errors lists { pointer, label, message } in document order; pointer is an RFC 6901 JSON Pointer (/data/...), label is the field trail such as "Cards › Card 2 › Name". schemaIssues lists the parts of the schema the form does not support, in the sc_compile_schema shape plus label. valid is true iff both are empty. If the schema is not valid JSON or the HTML is not a structured content document, the result has isError: true and { error }.',
+      inputSchema: z.object({
+        schema: z.string().describe('JSON Schema of the document as a JSON string'),
+        html: z.string().describe('The stored DA document HTML, as returned by da_get_source'),
+      }),
+    },
+    (args) => handleValidateHtml(args) as Promise<CallToolResult>,
   );
 
   server.registerTool(
